@@ -1,2 +1,2 @@
 # NeuroSync
-AI for Disability Inclusion.
+AI for Disability Inclusion
