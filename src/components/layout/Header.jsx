@@ -1,23 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Search, Mail, Bell } from 'lucide-react';
+import OverwhelmedButton from './overwhelmed/OverwhelmedButton';
+import OverwhelmedModal from './overwhelmed/OverwhelmedModal';
 
-export default function Header() {
+export default function Header({ focusMode, setFocusMode }) {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     return (
         <header className="h-[88px] px-8 flex items-center justify-between border-b border-[var(--color-border-color)] bg-[var(--color-bg-light)]">
 
-            {/* Search Bar */}
-            <div className="relative w-full max-w-md">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search size={18} className="text-[var(--color-text-muted)]" />
+            {/* Search Bar & Overwhelmed Button */}
+            <div className="flex items-center gap-6 w-full max-w-2xl">
+                <div className="relative w-full max-w-md">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search size={18} className="text-[var(--color-text-muted)]" />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Search task"
+                        className="block w-full pl-10 pr-12 py-2.5 border border-transparent rounded-full leading-5 bg-white text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:bg-white focus:border-[var(--color-brand-start)] focus:ring-1 focus:ring-[var(--color-brand-start)] sm:text-sm shadow-sm transition-all duration-200"
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <span className="text-[10px] font-medium text-[var(--color-text-muted)] border border-gray-200 rounded px-1.5 py-0.5 bg-gray-50">⌘F</span>
+                    </div>
                 </div>
-                <input
-                    type="text"
-                    placeholder="Search task"
-                    className="block w-full pl-10 pr-12 py-2.5 border border-transparent rounded-full leading-5 bg-white text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:bg-white focus:border-[var(--color-brand-start)] focus:ring-1 focus:ring-[var(--color-brand-start)] sm:text-sm shadow-sm transition-all duration-200"
-                />
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <span className="text-[10px] font-medium text-[var(--color-text-muted)] border border-gray-200 rounded px-1.5 py-0.5 bg-gray-50">⌘F</span>
-                </div>
+
+                {/* Overwhelmed Button */}
+                <OverwhelmedButton onClick={() => setIsModalOpen(true)} />
             </div>
 
             {/* Right Controls */}
@@ -48,6 +57,14 @@ export default function Header() {
                 </div>
 
             </div>
+
+            {/* Overwhelmed Modal Portal */}
+            <OverwhelmedModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                setFocusMode={setFocusMode}
+            />
+
         </header>
     );
 }

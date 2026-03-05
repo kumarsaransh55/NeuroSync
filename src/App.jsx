@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import MetricCards from './components/dashboard/MetricCards';
 import AnalyticsCard from './components/dashboard/AnalyticsCard';
@@ -8,21 +9,63 @@ import TeamCard from './components/dashboard/TeamCard';
 import ProgressCard from './components/dashboard/ProgressCard';
 import TimerCard from './components/dashboard/TimerCard';
 import TaskBuilder from './components/tasks/TaskBuilder';
+import EmailDocumentSummarizer from './components/summarizer/EmailDocumentSummarizer';
 
-function App() {
+import LoginPage from './components/auth/LoginPage';
+import AuthRoute from './components/auth/AuthRoute';
+
+function DashboardContent() {
   const [activeView, setActiveView] = useState('tasks');
+  const [focusMode, setFocusMode] = useState(false);
+
+  const getLayoutProps = () => {
+    switch (activeView) {
+      case 'tasks':
+        return {
+          title: 'Tasks',
+          description: 'Create, manage, and execute your tasks.',
+        };
+      case 'summarizer':
+        return {
+          title: 'Email & Document Summarizer',
+          description: 'Convert long emails and documents into clear summaries, tasks, and deadlines.',
+          actions: (
+            <>
+              <button className="px-5 py-2.5 rounded-[var(--radius-btn)] border border-[var(--color-brand-start)] text-[var(--color-brand-start)] font-medium text-[14px] hover:bg-[var(--color-success-bg)] transition-colors">
+                Paste Email
+              </button>
+              <button className="px-5 py-2.5 rounded-[var(--radius-btn)] bg-[var(--color-brand-start)] text-white font-medium text-[14px] flex items-center gap-2 hover:bg-[var(--color-brand-mid)] transition-colors shadow-sm">
+                Upload Document
+              </button>
+            </>
+          )
+        };
+      default:
+        return {
+          title: 'Dashboard',
+          description: 'Plan, prioritize, and accomplish your tasks with ease.',
+        };
+    }
+  };
+
+  const layoutProps = getLayoutProps();
 
   return (
     <Layout
-      title={activeView === 'tasks' ? 'Tasks' : 'Dashboard'}
-      description={activeView === 'tasks' ? 'Create, manage, and execute your tasks.' : 'Plan, prioritize, and accomplish your tasks with ease.'}
+      title={layoutProps.title}
+      description={layoutProps.description}
+      actions={layoutProps.actions}
       activeView={activeView}
       onViewChange={setActiveView}
+      focusMode={focusMode}
+      setFocusMode={setFocusMode}
     >
       {activeView === 'tasks' ? (
         <TaskBuilder />
+      ) : activeView === 'summarizer' ? (
+        <EmailDocumentSummarizer />
       ) : (
-        <>
+        <div className={`transition-all duration-300 ${focusMode ? 'opacity-30 pointer-events-none' : ''}`}>
           <MetricCards />
 
           {/* 12-Column Grid Layout for Main Content */}
@@ -56,9 +99,28 @@ function App() {
             </div>
 
           </div>
-        </>
+        </div>
       )}
     </Layout>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <AuthRoute>
+              <DashboardContent />
+            </AuthRoute>
+          }
+        />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

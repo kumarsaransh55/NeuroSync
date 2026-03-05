@@ -1,8 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     CheckSquare,
-    Calendar,
+    FileText,
     BarChart2,
     Users,
     Settings,
@@ -13,7 +14,7 @@ import {
 const mainMenuItems = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { id: 'tasks', name: 'Tasks', icon: CheckSquare, badge: '12+' },
-    { id: 'calendar', name: 'Calendar', icon: Calendar },
+    { id: 'summarizer', name: 'Summarizer', icon: FileText },
     { id: 'analytics', name: 'Analytics', icon: BarChart2 },
     { id: 'team', name: 'Team', icon: Users },
 ];
@@ -25,6 +26,14 @@ const generalMenuItems = [
 ];
 
 export default function Sidebar({ activeView = 'dashboard', onViewChange }) {
+    const navigate = useNavigate();
+
+    const handleLogout = (e) => {
+        e.preventDefault();
+        localStorage.removeItem("isAuthenticated");
+        navigate("/login");
+    };
+
     return (
         <aside className="w-[240px] bg-white h-screen flex flex-col border-r border-[var(--color-border-color)] pb-6 shrink-0 transition-all duration-300 sticky top-0 z-20 shadow-[var(--shadow-card)]">
             {/* Brand */}
@@ -81,6 +90,7 @@ export default function Sidebar({ activeView = 'dashboard', onViewChange }) {
                             <li key={item.name}>
                                 <a
                                     href="#"
+                                    onClick={item.id === 'logout' ? handleLogout : undefined}
                                     className="flex items-center gap-3 py-3 px-6 text-[14px] font-medium text-[var(--color-text-secondary)] hover:bg-gray-50 border-l-4 border-transparent hover:border-gray-200 transition-all duration-200"
                                 >
                                     <item.icon size={18} className="text-[var(--color-text-muted)]" strokeWidth={2} />

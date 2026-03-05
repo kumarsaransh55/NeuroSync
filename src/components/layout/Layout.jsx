@@ -8,14 +8,16 @@ export default function Layout({
     description = "Plan, prioritize, and accomplish your tasks with ease.",
     actions,
     activeView,
-    onViewChange
+    onViewChange,
+    focusMode,
+    setFocusMode
 }) {
     return (
         <div className="flex bg-[var(--color-bg-light)] min-h-screen font-sans text-[var(--color-text-primary)]">
             <Sidebar activeView={activeView} onViewChange={onViewChange} />
 
             <div className="flex-1 flex flex-col min-w-0">
-                <Header />
+                <Header focusMode={focusMode} setFocusMode={setFocusMode} />
 
                 <main className="p-8 flex-1 overflow-x-hidden overflow-y-auto w-full">
                     <div className="max-w-[1600px] mx-auto w-full">
