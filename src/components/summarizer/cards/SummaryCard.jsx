@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Copy, Clock, Check } from 'lucide-react';
 
-export default function SummaryCard() {
+export default function SummaryCard({ data }) {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = () => {
@@ -30,11 +30,7 @@ export default function SummaryCard() {
             </div>
 
             <p className="text-[var(--color-text-secondary)] leading-relaxed text-[15px]">
-                The attached document details the new Q3 project requirements and revised delivery schedule.
-                Key updates include deploying the initial dashboard by August 15th, incorporating the new
-                Tailwind CSS design system, and ensuring all core layout components are fully responsive before
-                moving to the reporting module. You are also required to confirm the revised budget allocations
-                with the finance team prior to Friday's steering committee meeting.
+                {data}
             </p>
         </div>
     );

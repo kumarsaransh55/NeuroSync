@@ -55,7 +55,7 @@ export default function OverwhelmedModal({ isOpen, onClose, setFocusMode }) {
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="overwhelmed-title"
-                className={`relative w-full sm:w-[90%] md:w-[480px] bg-white rounded-t-3xl sm:rounded-2xl p-6 sm:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.15)] mt-auto sm:mt-0 max-h-[90vh] overflow-y-auto transform transition-all duration-250 ease-out origin-bottom sm:origin-center
+                className={`relative w-full sm:w-[90%] md:w-[480px] bg-white rounded-t-3xl sm:rounded-2xl p-6 sm:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.15)] mt-auto sm:mt-0 max-h-[90vh] transform transition-all duration-250 ease-out origin-bottom sm:origin-center
                     ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-8 sm:translate-y-0'}`}
             >
 

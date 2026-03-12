@@ -2,13 +2,17 @@ import React, { useState } from 'react';
 import {
     Sparkles, Mail, GripVertical, CheckCircle2, Circle,
     Clock, Calendar, Bell, ShieldAlert, Play, Target, Plus,
-    MoreVertical, ChevronDown
+    MoreVertical, ChevronDown, Inbox, Star, History, Trash, Briefcase, User
 } from 'lucide-react';
+import GmailInboxModal from './GmailInboxModal';
 
 export default function TaskBuilder() {
     // 1. Task Details State
     const [taskName, setTaskName] = useState('');
     const [taskDesc, setTaskDesc] = useState('');
+
+    // 1.5 Modal State
+    const [isGmailModalOpen, setIsGmailModalOpen] = useState(false);
 
     // 2. Micro-Steps State
     const [steps, setSteps] = useState([
@@ -32,6 +36,22 @@ export default function TaskBuilder() {
 
     // --- Actions ---
 
+    // Handle bringing an email from the modal context into the task builder
+    const handleAddEmailAsTask = (email) => {
+        setTaskName(`[Email] ${email.subject}`);
+        setTaskDesc(`From: ${email.sender}\n\n${email.body}`);
+
+        // Auto-generate some AI steps from the email
+        setSteps([
+            { id: Date.now().toString(), text: `Review email from ${email.sender}`, completed: false, estMinutes: 10 },
+            { id: (Date.now() + 1).toString(), text: 'Formulate response points', completed: false, estMinutes: 15 },
+            { id: (Date.now() + 2).toString(), text: 'Draft reply', completed: false, estMinutes: 20 },
+            { id: (Date.now() + 3).toString(), text: 'Send and archive', completed: false, estMinutes: 5 },
+        ]);
+
+        setIsGmailModalOpen(false);
+    };
+
     const handleAIBreakdown = () => {
         if (!taskName) return;
         // Simulate AI generating steps
@@ -41,11 +61,6 @@ export default function TaskBuilder() {
             { id: (Date.now() + 2).toString(), text: 'Draft actual content', completed: false, estMinutes: 60 },
             { id: (Date.now() + 3).toString(), text: 'Review and refine', completed: false, estMinutes: 15 },
         ]);
-    };
-
-    const handleGenerateEmail = () => {
-        setTaskName('Q3 Marketing Campaign Review');
-        setTaskDesc('Review the draft sent by Sarah. Pay special attention to the budget allocations for social media and the new graphic assets. Need feedback by EOD.');
     };
 
     const handleStepToggle = (id) => {
@@ -106,18 +121,115 @@ export default function TaskBuilder() {
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6 pb-20">
+        <div className="max-w-[1400px] mx-auto space-y-6 pb-20 px-4 sm:px-6">
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">Task Builder</h2>
-                    <p className="text-sm text-[var(--color-text-secondary)]">Create, break down, and schedule your task</p>
+
+
+            <div className={`grid grid-cols-1 lg:grid-cols-4 gap-6 transition-all duration-500 ${focusMode ? 'scale-[1.02] transform' : ''}`}>
+
+                {/* Left Sidebar Section (Matching the Image) */}
+                <div className="lg:col-span-1 hidden lg:block space-y-4">
+                    <div className="bg-white rounded-[var(--radius-card)] p-4 shadow-[var(--shadow-card)] border border-[var(--color-border-color)]">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-bold text-[15px] text-gray-900">Overview</h3>
+                            <div className="flex items-center gap-2 text-gray-500">
+                                <Plus size={16} className="cursor-pointer hover:text-gray-800" />
+                            </div>
+                        </div>
+
+                        <ul className="space-y-2 mb-6">
+                            <li
+                                onClick={() => setIsGmailModalOpen(true)}
+                                className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-100 hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-colors"
+                            >
+                                <div className="flex items-center gap-3 text-[14px] font-medium text-gray-700">
+                                    <Inbox size={18} className="text-gray-600" />
+                                    <span>Inbox</span>
+                                </div>
+                                <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">6</span>
+                            </li>
+                            <li className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-100 hover:border-gray-200 cursor-pointer transition-colors">
+                                <div className="flex items-center gap-3 text-[14px] font-medium text-gray-700">
+                                    <Star size={18} className="text-amber-500 fill-amber-500" />
+                                    <span>Today</span>
+                                </div>
+                            </li>
+                            <li className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-100 hover:border-gray-200 cursor-pointer transition-colors">
+                                <div className="flex items-center gap-3 text-[14px] font-medium text-gray-700">
+                                    <Calendar size={18} className="text-gray-600" />
+                                    <span>Upcoming</span>
+                                </div>
+                                <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">6</span>
+                            </li>
+                            <li className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-100 hover:border-gray-200 cursor-pointer transition-colors">
+                                <div className="flex items-center gap-3 text-[14px] font-medium text-gray-700">
+                                    <History size={18} className="text-gray-600" />
+                                    <span>History</span>
+                                </div>
+                            </li>
+                            <li className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-100 hover:border-gray-200 cursor-pointer transition-colors">
+                                <div className="flex items-center gap-3 text-[14px] font-medium text-gray-700">
+                                    <Trash size={18} className="text-gray-600" />
+                                    <span>Trash</span>
+                                </div>
+                            </li>
+                        </ul>
+
+                        <div className="mb-4">
+                            <h4 className="flex items-center gap-2 text-[14px] font-bold text-gray-900 mb-2">
+                                <span className="w-2 h-2 rounded-full bg-green-500"></span> Work
+                            </h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-blue-600 bg-blue-50 cursor-pointer transition-colors">
+                                    <div className="flex items-center gap-3 text-[14px] font-medium text-blue-700">
+                                        <div className="w-[18px] h-[18px] rounded-full border-2 border-blue-600 flex items-center justify-center">
+                                            <div className="w-[6px] h-[6px] rounded-full bg-blue-600"></div>
+                                        </div>
+                                        <span>Design & Development</span>
+                                    </div>
+                                </li>
+                                <li className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-100 hover:border-gray-200 cursor-pointer transition-colors">
+                                    <div className="flex items-center gap-3 text-[14px] font-medium text-gray-700">
+                                        <div className="w-[18px] h-[18px] rounded-full border-[2px] border-black flex items-center justify-center"></div>
+                                        <span>Progress Check-in</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h4 className="flex items-center gap-2 text-[14px] font-bold text-gray-900 mb-2 mt-6">
+                                <span className="w-2 h-2 rounded-full bg-red-500"></span> Personal
+                            </h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-100 hover:border-gray-200 cursor-pointer transition-colors">
+                                    <div className="flex items-center gap-3 text-[14px] font-medium text-gray-700">
+                                        <div className="w-[18px] h-[18px] rounded-full border-[2px] border-black flex items-center justify-center">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-black"></div>
+                                        </div>
+                                        <span>Shopping</span>
+                                    </div>
+                                </li>
+                                <li className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-100 hover:border-gray-200 cursor-pointer transition-colors">
+                                    <div className="flex items-center gap-3 text-[14px] font-medium text-gray-700">
+                                        <div className="w-[18px] h-[18px] rounded-full border-[2px] border-black flex items-center justify-center">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-black"></div>
+                                        </div>
+                                        <span>Traveling</span>
+                                    </div>
+                                </li>
+                                <li className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-100 hover:border-gray-200 cursor-pointer transition-colors">
+                                    <div className="flex items-center gap-3 text-[14px] font-medium text-gray-700">
+                                        <div className="w-[18px] h-[18px] rounded-full border-[2px] border-black flex items-center justify-center"></div>
+                                        <span>Sport</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 transition-all duration-500 ${focusMode ? 'scale-[1.02] transform' : ''}`}>
-
-                {/* Main Left Column */}
+                {/* Main Center Column (Existing content shifted) */}
                 <div className="lg:col-span-2 space-y-6">
 
                     {/* 1. Create Task Section */}
@@ -145,13 +257,6 @@ export default function TaskBuilder() {
                                 <button className="px-5 py-2.5 rounded-[var(--radius-btn)] bg-[var(--color-brand-start)] text-white font-medium text-[14px] hover:bg-[var(--color-brand-mid)] transition-colors shadow-sm flex items-center gap-2">
                                     <Plus size={16} />
                                     Create Task
-                                </button>
-                                <button
-                                    onClick={handleGenerateEmail}
-                                    className="px-4 py-2.5 rounded-[var(--radius-btn)] bg-blue-50 text-blue-600 font-medium text-[14px] hover:bg-blue-100 transition-colors flex items-center gap-2"
-                                >
-                                    <Mail size={16} />
-                                    Generate from Email
                                 </button>
                                 <button
                                     onClick={handleAIBreakdown}
@@ -192,20 +297,43 @@ export default function TaskBuilder() {
                             </div>
                         </div>
 
+                        {/* Parent Context Header (If applicable) */}
+                        {taskName && (
+                            <div className="mb-4 p-3 bg-[var(--color-bg-light)] border border-gray-200 rounded-xl flex items-start gap-3">
+                                <div className="mt-0.5">
+                                    {progressPercent === 100 ? (
+                                        <CheckCircle2 size={18} className="text-green-500" />
+                                    ) : (
+                                        <Circle size={18} className="text-[var(--color-brand-start)]" />
+                                    )}
+                                </div>
+                                <div>
+                                    <h4 className="text-[14px] font-bold text-[var(--color-text-primary)]">{taskName}</h4>
+                                    {taskDesc && <p className="text-[12px] text-gray-500 line-clamp-2 mt-0.5">{taskDesc}</p>}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Checklist */}
-                        <div className="space-y-2">
+                        <div className="space-y-2 relative pl-2">
+                            {/* Connector line if parent exists */}
+                            {taskName && steps.length > 0 && (
+                                <div className="absolute left-4 top-0 bottom-6 w-px bg-gray-200 -z-10"></div>
+                            )}
+
                             {steps.length === 0 && (
                                 <div className="text-center py-8 text-gray-400 text-sm border-2 border-dashed border-gray-100 rounded-lg">
                                     No steps yet. Use AI to generate steps or add manually.
                                 </div>
                             )}
+
                             {steps.map((step, index) => {
                                 const isCurrentFocus = focusMode && !step.completed && steps.findIndex(s => !s.completed) === index;
                                 const isCollapsed = focusMode && !isCurrentFocus && !step.completed;
 
                                 if (isCollapsed) {
                                     return (
-                                        <div key={step.id} className="py-2 px-4 rounded-lg bg-gray-50 flex items-center justify-between text-gray-400 opacity-50 scale-95 origin-left transition-all duration-300">
+                                        <div key={step.id} className="py-2 px-4 rounded-lg bg-gray-50 flex items-center justify-between text-gray-400 opacity-50 scale-95 origin-left transition-all duration-300 ml-6">
                                             <span className="text-sm truncate">{step.text}</span>
                                         </div>
                                     );
@@ -218,12 +346,18 @@ export default function TaskBuilder() {
                                         onDragStart={(e) => handleDragStart(e, step.id)}
                                         onDragOver={(e) => handleDragOver(e, index)}
                                         onDragEnd={handleDragEnd}
-                                        className={`group flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 cursor-grab active:cursor-grabbing
+                                        className={`group flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 cursor-grab active:cursor-grabbing relative
+                                            ${taskName ? 'ml-6' : ''}
                                             ${step.completed ? 'bg-gray-50 border-gray-100' : 'bg-white border-gray-200 hover:border-gray-300'}
                                             ${isCurrentFocus ? 'ring-2 ring-[var(--color-brand-start)] ring-offset-2 border-transparent scale-[1.01] shadow-md bg-blue-50/30' : ''}
                                             ${draggedStepId === step.id ? 'opacity-50' : 'opacity-100'}
                                         `}
                                     >
+                                        {/* Connector branch if parent exists */}
+                                        {taskName && (
+                                            <div className="absolute -left-6 top-1/2 w-4 h-px bg-gray-200"></div>
+                                        )}
+
                                         {/* Drag Handle */}
                                         <div className="text-gray-300 hover:text-gray-500 transition-colors">
                                             <GripVertical size={16} />
@@ -270,8 +404,8 @@ export default function TaskBuilder() {
 
                 </div>
 
-                {/* Right Column / Sidebar */}
-                <div className="space-y-6">
+                {/* Right Column */}
+                <div className="lg:col-span-1 space-y-6">
 
                     {/* 5. Start Task Button (Focus Mode) */}
                     <div className="bg-white rounded-[var(--radius-card)] p-1 shadow-[var(--shadow-card)] overflow-hidden">
@@ -407,6 +541,13 @@ export default function TaskBuilder() {
 
                 </div>
             </div>
+
+            {/* Modals */}
+            <GmailInboxModal
+                isOpen={isGmailModalOpen}
+                onClose={() => setIsGmailModalOpen(false)}
+                onAddTask={handleAddEmailAsTask}
+            />
         </div>
     );
 }

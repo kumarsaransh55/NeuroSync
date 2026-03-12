@@ -4,19 +4,95 @@ import { useNavigate } from 'react-router-dom';
 export default function LoginForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    // Helper to extract cookie value
+    const getCookie = (name) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (email && password) {
-            localStorage.setItem("isAuthenticated", "true");
-            navigate('/dashboard');
+
+        if (!email || !password) {
+            setErrorMsg('Please enter both email and password.');
+            return;
+        }
+
+        setIsLoading(true);
+        setErrorMsg('');
+
+        try {
+            const response = await fetch("https://neurosync.azurewebsites.net/api/Auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                // Pass credentials to allow the backend to drop cookies if necessary
+                credentials: 'omit',
+                body: JSON.stringify({
+                    email,
+                    password
+                })
+            });
+           
+            if (response.ok) {
+                // Determine token from response or cookies natively
+                let token = null;
+
+                // Trying to extract from JSON body first (common fallback if cookie header is locked)
+                try {
+                    const data = await response.json();
+                    if (data && data.token) token = data.token;
+                    else if (data && data.neurosync_jwt) token = data.neurosync_jwt;
+                } catch (e) {
+                    console.log("No JSON body or parse error", e);
+                }
+
+                // If not found in body, extract from Cookies explicitly per request
+                if (!token) {
+                    token = getCookie('neurosync_jwt');
+                }
+ 
+                if (token) {
+                    localStorage.setItem('neurosync_jwt', token);
+                } else {
+                    console.warn("Could not find 'neurosync_jwt' gracefully. The backend response might have it locked as HttpOnly or there's a different property name.");
+                }
+                 console.log("token",token)
+                localStorage.setItem("isAuthenticated", "true");
+                navigate('/dashboard');
+            } else {
+                let errText = "Invalid email or password";
+                try {
+                    const errorObj = await response.json();
+                    if (errorObj && errorObj.message) errText = errorObj.message;
+                } catch (e) { }
+                setErrorMsg(errText);
+            }
+        } catch (error) {
+            console.error("Login Error:", error);
+            setErrorMsg("Network error. Could not connect to the server.");
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
         <div className="w-full">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
+                {errorMsg && (
+                    <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm border border-red-100 mb-2">
+                        {errorMsg}
+                    </div>
+                )}
+
                 <div className="flex flex-col gap-1.5">
                     <label className="text-[14px] font-medium text-gray-700">Email Address</label>
                     <input
@@ -26,6 +102,7 @@ export default function LoginForm() {
                         className="h-[44px] px-3 border border-gray-200 rounded-xl font-['Inter'] placeholder-[#9CA3AF] focus:outline-none focus:border-[#22C55E] focus:ring-1 focus:ring-[#22C55E] transition-all text-[14px] shadow-sm"
                         placeholder="you@example.com"
                         required
+                        disabled={isLoading}
                     />
                 </div>
 
@@ -38,6 +115,7 @@ export default function LoginForm() {
                         className="h-[44px] px-3 border border-gray-200 rounded-xl font-['Inter'] placeholder-[#9CA3AF] focus:outline-none focus:border-[#22C55E] focus:ring-1 focus:ring-[#22C55E] transition-all text-[14px] shadow-sm"
                         placeholder="••••••••"
                         required
+                        disabled={isLoading}
                     />
                 </div>
 
@@ -53,13 +131,28 @@ export default function LoginForm() {
 
                 <button
                     type="submit"
-                    className="h-[44px] bg-gradient-to-r from-[#14532D] to-[#166534] text-white rounded-xl font-semibold text-[14px] shadow-[0_6px_12px_rgba(22,101,52,0.2)] hover:scale-[1.02] transition-transform duration-200 flex items-center justify-center"
+                    disabled={isLoading}
+                    className="h-[44px] bg-gradient-to-r from-[#14532D] to-[#166534] text-white rounded-xl font-semibold text-[14px] shadow-[0_6px_12px_rgba(22,101,52,0.2)] hover:scale-[1.02] transition-transform duration-200 flex items-center justify-center disabled:opacity-70 disabled:scale-100 disabled:cursor-not-allowed"
                 >
-                    Login
+                    {isLoading ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ) : (
+                        "Login"
+                    )}
                 </button>
             </form>
 
-            <div className="mt-6">
+            <div className="text-center mt-6 mb-2">
+                <span className="text-[14px] text-gray-600">Don't have an account? </span>
+                <span
+                    onClick={() => navigate('/register')}
+                    className="text-[14px] text-[#166534] hover:underline font-medium cursor-pointer"
+                >
+                    Sign up now
+                </span>
+            </div>
+
+            <div className="mt-4">
                 <div className="relative flex items-center">
                     <div className="flex-grow border-t border-gray-200"></div>
                     <span className="flex-shrink-0 px-4 text-[13px] text-gray-500 bg-white">Or continue with</span>

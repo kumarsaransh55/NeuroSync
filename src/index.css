@@ -43,7 +43,32 @@
 }
 
 @layer utilities {
-  .font-dyslexic {
+
+  /* Font Families */
+  .font-dyslexia * {
     font-family: 'OpenDyslexic', sans-serif !important;
+  }
+
+  /* Font Sizes */
+  html.font-size-small {
+    font-size: 14px;
+  }
+
+  html.font-size-medium {
+    font-size: 16px;
+  }
+
+  html.font-size-large {
+    font-size: 18px;
+  }
+
+  /* High Contrast Mode overrides */
+  html.high-contrast {
+    filter: contrast(125%) saturate(110%);
+  }
+
+  /* Basic Dark Mode shell (to be expanded) */
+  html.dark {
+    filter: invert(1) hue-rotate(180deg);
   }
 }

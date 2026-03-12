@@ -7,10 +7,18 @@ import ToneCard from './cards/ToneCard';
 import HighlightsCard from './cards/HighlightsCard';
 import SimplifiedCard from './cards/SimplifiedCard';
 import HiddenTasksCard from './cards/HiddenTasksCard';
+import { FileText, Sparkles } from 'lucide-react';
 
 export default function EmailDocumentSummarizer() {
     const [simplifyMode, setSimplifyMode] = useState(false);
     const [dyslexiaMode, setDyslexiaMode] = useState(false);
+    
+    // State to hold the result of the AI Analysis
+    const [analysisResult, setAnalysisResult] = useState(null);
+
+    const handleAnalysisComplete = (resultData) => {
+        setAnalysisResult(resultData);
+    };
 
     return (
         <div className={`w-full ${dyslexiaMode ? 'font-dyslexic' : ''}`}>
@@ -50,22 +58,34 @@ export default function EmailDocumentSummarizer() {
 
                 {/* Left Panel - Input Workspace (5 columns) */}
                 <div className="col-span-1 md:col-span-12 xl:col-span-5 flex flex-col gap-6">
-                    <InputWorkspace />
+                    <InputWorkspace onAnalyzeComplete={handleAnalysisComplete} />
                 </div>
 
                 {/* Right Panel - AI Output (7 columns) */}
                 <div className="col-span-1 md:col-span-12 xl:col-span-7 flex flex-col gap-5">
-                    <SummaryCard />
-                    <ActionItemsCard />
-                    <DeadlineCard />
+                    {!analysisResult ? (
+                        <div className="flex flex-col items-center justify-center h-full min-h-[500px] border-2 border-dashed border-gray-200 rounded-[var(--radius-card)] bg-gray-50/50 text-gray-400">
+                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                                <FileText size={28} className="text-gray-300" />
+                            </div>
+                            <h3 className="text-lg font-medium text-gray-600 mb-2">Waiting for Content</h3>
+                            <p className="text-sm max-w-[280px] text-center">Paste text or upload a document on the left, then click Generate Summary to see AI insights here.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            <SummaryCard data={analysisResult.summary} />
+                            <ActionItemsCard data={analysisResult.actionItems} />
+                            <DeadlineCard data={analysisResult.deadlines} />
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        <ToneCard />
-                        <HiddenTasksCard />
-                    </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <ToneCard data={analysisResult.tone} />
+                                <HiddenTasksCard data={analysisResult.hiddenTasks} />
+                            </div>
 
-                    <HighlightsCard />
-                    <SimplifiedCard simplifyMode={simplifyMode} />
+                            <HighlightsCard data={analysisResult.highlights} />
+                            <SimplifiedCard simplifyMode={simplifyMode} data={analysisResult.simplified} />
+                        </div>
+                    )}
                 </div>
 
             </div>

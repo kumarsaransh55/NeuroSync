@@ -10,9 +10,13 @@ import ProgressCard from './components/dashboard/ProgressCard';
 import TimerCard from './components/dashboard/TimerCard';
 import TaskBuilder from './components/tasks/TaskBuilder';
 import EmailDocumentSummarizer from './components/summarizer/EmailDocumentSummarizer';
+import SettingsPage from './components/settings/SettingsPage';
 
 import LoginPage from './components/auth/LoginPage';
+import RegisterPage from './components/auth/RegisterPage';
 import AuthRoute from './components/auth/AuthRoute';
+
+import { SettingsProvider } from './context/SettingsContext';
 
 function DashboardContent() {
   const [activeView, setActiveView] = useState('tasks');
@@ -24,6 +28,7 @@ function DashboardContent() {
         return {
           title: 'Tasks',
           description: 'Create, manage, and execute your tasks.',
+          actions: <></>
         };
       case 'summarizer':
         return {
@@ -39,6 +44,11 @@ function DashboardContent() {
               </button>
             </>
           )
+        };
+      case 'settings':
+        return {
+          title: 'Preferences',
+          description: 'Configure layout, notifications, and AI experiences.',
         };
       default:
         return {
@@ -64,6 +74,8 @@ function DashboardContent() {
         <TaskBuilder />
       ) : activeView === 'summarizer' ? (
         <EmailDocumentSummarizer />
+      ) : activeView === 'settings' ? (
+        <SettingsPage />
       ) : (
         <div className={`transition-all duration-300 ${focusMode ? 'opacity-30 pointer-events-none' : ''}`}>
           <MetricCards />
@@ -107,20 +119,23 @@ function DashboardContent() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/dashboard"
-          element={
-            <AuthRoute>
-              <DashboardContent />
-            </AuthRoute>
-          }
-        />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <SettingsProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <AuthRoute>
+                <DashboardContent />
+              </AuthRoute>
+            }
+          />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </SettingsProvider>
   );
 }
 

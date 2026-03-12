@@ -1,15 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 
-const initialTasks = [
-    { id: 1, text: "Deploy initial dashboard by August 15th", checked: false },
-    { id: 2, text: "Incorporate new Tailwind CSS design system", checked: false },
-    { id: 3, text: "Ensure layout components are fully responsive", checked: false },
-    { id: 4, text: "Confirm revised budget with finance team", checked: false },
-];
+export default function ActionItemsCard({ data = [] }) {
+    const [tasks, setTasks] = useState(data);
 
-export default function ActionItemsCard() {
-    const [tasks, setTasks] = useState(initialTasks);
+    useEffect(() => {
+        setTasks(data);
+    }, [data]);
 
     const toggleTask = (id) => {
         setTasks(tasks.map(t => t.id === id ? { ...t, checked: !t.checked } : t));

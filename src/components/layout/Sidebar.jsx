@@ -86,18 +86,31 @@ export default function Sidebar({ activeView = 'dashboard', onViewChange }) {
                 <div>
                     <p className="px-6 text-[11px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">General</p>
                     <ul className="space-y-1">
-                        {generalMenuItems.map((item) => (
-                            <li key={item.name}>
-                                <a
-                                    href="#"
-                                    onClick={item.id === 'logout' ? handleLogout : undefined}
-                                    className="flex items-center gap-3 py-3 px-6 text-[14px] font-medium text-[var(--color-text-secondary)] hover:bg-gray-50 border-l-4 border-transparent hover:border-gray-200 transition-all duration-200"
-                                >
-                                    <item.icon size={18} className="text-[var(--color-text-muted)]" strokeWidth={2} />
-                                    {item.name}
-                                </a>
-                            </li>
-                        ))}
+                        {generalMenuItems.map((item) => {
+                            const isActive = activeView === item.id;
+                            return (
+                                <li key={item.id}>
+                                    <a
+                                        href="#"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            if (item.id === 'logout') {
+                                                handleLogout(e);
+                                            } else if (onViewChange) {
+                                                onViewChange(item.id);
+                                            }
+                                        }}
+                                        className={`flex items-center gap-3 py-3 px-6 text-[14px] font-medium transition-all duration-200 ${isActive
+                                            ? 'bg-[var(--color-success-bg)] text-[var(--color-brand-end)] border-l-4 border-[var(--color-brand-end)]'
+                                            : 'text-[var(--color-text-secondary)] hover:bg-gray-50 border-l-4 border-transparent hover:border-gray-200'
+                                            }`}
+                                    >
+                                        <item.icon size={18} className={isActive ? 'text-[var(--color-brand-end)]' : 'text-[var(--color-text-muted)]'} strokeWidth={2} />
+                                        {item.name}
+                                    </a>
+                                </li>
+                            );
+                        })}
                     </ul>
                 </div>
             </div>
