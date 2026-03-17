@@ -34,7 +34,7 @@ export default function LoginForm() {
                     "Content-Type": "application/json"
                 },
                 // Pass credentials to allow the backend to drop cookies if necessary
-                credentials: 'omit',
+                credentials: 'include',
                 body: JSON.stringify({
                     email,
                     password

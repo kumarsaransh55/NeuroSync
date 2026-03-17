@@ -7,14 +7,12 @@ export default function Layout({
     title = "Dashboard",
     description = "Plan, prioritize, and accomplish your tasks with ease.",
     actions,
-    activeView,
-    onViewChange,
     focusMode,
     setFocusMode
 }) {
     return (
         <div className="flex bg-[var(--color-bg-light)] min-h-screen font-sans text-[var(--color-text-primary)]">
-            <Sidebar activeView={activeView} onViewChange={onViewChange} />
+            <Sidebar />
 
             <div className="flex-1 flex flex-col min-w-0">
                 <Header focusMode={focusMode} setFocusMode={setFocusMode} />

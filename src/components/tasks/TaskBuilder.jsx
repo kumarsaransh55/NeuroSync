@@ -14,20 +14,90 @@ export default function TaskBuilder() {
     // 1.5 Modal State
     const [isGmailModalOpen, setIsGmailModalOpen] = useState(false);
 
-    // 2. Micro-Steps State
-    const [steps, setSteps] = useState([
-        { id: '1', text: 'Analyze requirements', completed: true, estMinutes: 15 },
-        { id: '2', text: 'Draft initial wireframes', completed: false, estMinutes: 45 },
-        { id: '3', text: 'Review with team', completed: false, estMinutes: 30 },
+    // 2. Tasks State
+    const [tasks, setTasks] = useState([
+        {
+            id: 't1',
+            name: 'Follow-up call with TechCorp',
+            description: 'Discuss contract terms and pricing',
+            completed: false,
+            dueDate: 'Nov 12, 2024',
+            relatedTo: 'TechCorp Industries',
+            assignee: { name: 'Sarah Chen', avatar: 'https://i.pravatar.cc/150?img=5' },
+            tags: [
+                { label: 'high', type: 'priority', icon: 'flag' },
+                { label: 'call', type: 'category' }
+            ],
+            steps: []
+        },
+        {
+            id: 't2',
+            name: 'Send proposal to Global Solutions',
+            description: 'Include pricing and implementation timeline',
+            completed: false,
+            dueDate: 'Nov 13, 2024',
+            relatedTo: 'Global Solutions',
+            assignee: { name: 'Michael Ross', avatar: 'https://i.pravatar.cc/150?img=11' },
+            tags: [
+                { label: 'high', type: 'priority', icon: 'flag' },
+                { label: 'email', type: 'category' }
+            ],
+            steps: []
+        },
+        {
+            id: 't3',
+            name: 'Product demo for StartupHub',
+            description: 'Showcase new features and integrations',
+            completed: false,
+            dueDate: 'Nov 14, 2024',
+            relatedTo: 'StartupHub',
+            assignee: { name: 'Emily Davis', avatar: 'https://i.pravatar.cc/150?img=4' },
+            tags: [
+                { label: 'medium', type: 'priority', icon: 'flag' },
+                { label: 'meeting', type: 'category' }
+            ],
+            steps: []
+        },
+        {
+            id: 't4',
+            name: 'Contract review with legal',
+            description: 'Review and approve Enterprise Systems contract',
+            completed: false,
+            dueDate: 'Nov 15, 2024',
+            relatedTo: 'Enterprise Systems',
+            assignee: { name: 'James Wilson', avatar: 'https://i.pravatar.cc/150?img=12' },
+            tags: [
+                { label: 'medium', type: 'priority', icon: 'flag' },
+                { label: 'call', type: 'category' }
+            ],
+            steps: []
+        },
+        {
+            id: 't5',
+            name: 'Follow-up email to Innovate Corp',
+            description: 'Check status of proposal submission',
+            completed: true,
+            dueDate: 'Nov 11, 2024',
+            relatedTo: 'Innovate Corp',
+            assignee: { name: 'Michael Ross', avatar: 'https://i.pravatar.cc/150?img=11' },
+            tags: [
+                { label: 'high', type: 'priority', icon: 'flag' },
+                { label: 'follow-up', type: 'category' }
+            ],
+            steps: []
+        }
     ]);
+
+    const [expandedTaskId, setExpandedTaskId] = useState(null);
     const [draggedStepId, setDraggedStepId] = useState(null);
+    const [aiLoading, setAiLoading] = useState(null); // taskId or 'draft'
 
     // 3. Timeline & Scheduling State
     const [dueDate, setDueDate] = useState('');
 
     // 4. Reminder State
     const [remindersEnabled, setRemindersEnabled] = useState(false);
-    const [reminderType, setReminderType] = useState('Standard'); // Gentle, Standard, Persistent
+    const [reminderType, setReminderType] = useState('Standard');
     const [reminderFreq, setReminderFreq] = useState('10 mins before');
     const [escalate, setEscalate] = useState(false);
 
@@ -36,64 +106,192 @@ export default function TaskBuilder() {
 
     // --- Actions ---
 
-    // Handle bringing an email from the modal context into the task builder
     const handleAddEmailAsTask = (email) => {
-        setTaskName(`[Email] ${email.subject}`);
-        setTaskDesc(`From: ${email.sender}\n\n${email.body}`);
-
-        // Auto-generate some AI steps from the email
-        setSteps([
-            { id: Date.now().toString(), text: `Review email from ${email.sender}`, completed: false, estMinutes: 10 },
-            { id: (Date.now() + 1).toString(), text: 'Formulate response points', completed: false, estMinutes: 15 },
-            { id: (Date.now() + 2).toString(), text: 'Draft reply', completed: false, estMinutes: 20 },
-            { id: (Date.now() + 3).toString(), text: 'Send and archive', completed: false, estMinutes: 5 },
-        ]);
-
+        const newTask = {
+            id: Date.now().toString(),
+            name: `[Email] ${email.subject}`,
+            description: `From: ${email.sender}\n\n${email.body}`,
+            completed: false,
+            dueDate: 'Today',
+            relatedTo: email.sender,
+            assignee: { name: 'Me', avatar: 'https://ui-avatars.com/api/?name=Me' },
+            tags: [
+                { label: 'high', type: 'priority', icon: 'flag' },
+                { label: 'email', type: 'category' }
+            ],
+            steps: [
+                { id: Date.now().toString() + '_1', text: `Review email from ${email.sender}`, completed: false, estMinutes: 10 },
+                { id: Date.now().toString() + '_2', text: 'Formulate response points', completed: false, estMinutes: 15 },
+                { id: Date.now().toString() + '_3', text: 'Draft reply', completed: false, estMinutes: 20 },
+                { id: Date.now().toString() + '_4', text: 'Send and archive', completed: false, estMinutes: 5 },
+            ]
+        };
+        setTasks([newTask, ...tasks]);
         setIsGmailModalOpen(false);
     };
 
-    const handleAIBreakdown = () => {
+    const handleCreateTask = () => {
         if (!taskName) return;
-        // Simulate AI generating steps
-        setSteps([
-            { id: Date.now().toString(), text: `Research: ${taskName}`, completed: false, estMinutes: 20 },
-            { id: (Date.now() + 1).toString(), text: 'Outline main concepts', completed: false, estMinutes: 30 },
-            { id: (Date.now() + 2).toString(), text: 'Draft actual content', completed: false, estMinutes: 60 },
-            { id: (Date.now() + 3).toString(), text: 'Review and refine', completed: false, estMinutes: 15 },
-        ]);
+        const newTask = {
+            id: Date.now().toString(),
+            name: taskName,
+            description: taskDesc,
+            completed: false,
+            dueDate: 'Today',
+            relatedTo: 'General',
+            assignee: { name: 'Me', avatar: `https://ui-avatars.com/api/?name=Me&background=random` },
+            tags: [],
+            steps: []
+        };
+        setTasks([newTask, ...tasks]);
+        setTaskName('');
+        setTaskDesc('');
+    }
+
+
+    const TEMP_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJmYTliM2VmNi0yMGQ5LTRhOTktYTFmNC0xYWYzNjIwMTBjMGUiLCJlbWFpbCI6InNhbEBnbWFpbC5jb20iLCJ1bmlxdWVfbmFtZSI6InNhbGx1IiwibmJmIjoxNzczMDc0MTU1LCJleHAiOjE3NzM2Nzg5NTUsImlhdCI6MTc3MzA3NDE1NSwiaXNzIjoiTmV1cm9TeW5jQXBpIiwiYXVkIjoiTmV1cm9TeW5jVXNlcnMifQ.plyYeabARwFNvYDFuqzVxBq14j287-W5RQJO3za_E4o';
+
+    const handleAIBreakdownDraft = () => {
+        if (!taskName) return;
+        const newTask = {
+            id: Date.now().toString(),
+            name: taskName,
+            description: taskDesc,
+            completed: false,
+            dueDate: 'Today',
+            relatedTo: 'General',
+            assignee: { name: 'Me', avatar: `https://ui-avatars.com/api/?name=Me&background=random` },
+            tags: [],
+            steps: [
+                { id: Date.now().toString() + '_1', text: `Research: ${taskName}`, description: '', completed: false, estMinutes: 20 },
+                { id: Date.now().toString() + '_2', text: 'Outline main concepts', description: '', completed: false, estMinutes: 30 },
+                { id: Date.now().toString() + '_3', text: 'Draft actual content', description: '', completed: false, estMinutes: 60 },
+                { id: Date.now().toString() + '_4', text: 'Review and refine', description: '', completed: false, estMinutes: 15 },
+            ]
+        };
+        setTasks(prev => [newTask, ...prev]);
+        setExpandedTaskId(newTask.id);
+        setTaskName('');
+        setTaskDesc('');
+
+        /* --- API call (commented out until auth is fixed) ---
+        setAiLoading('draft');
+        try {
+            const response = await fetch('https://neurosync.azurewebsites.net/api/Tasks/create-task', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${TEMP_JWT}`,
+                },
+                body: JSON.stringify({ rawText: taskName }),
+            });
+            if (!response.ok) throw new Error('API error');
+            const data = await response.json();
+            ... map data.microSteps ...
+        } catch (err) {
+            console.error('AI breakdown failed:', err);
+        } finally {
+            setAiLoading(null);
+        }
+        --- end API call --- */
+    }
+
+    const handleAIBreakdown = (taskId) => {
+        setTasks(tasks.map(t => {
+            if (t.id === taskId) {
+                return {
+                    ...t,
+                    steps: [
+                        { id: Date.now().toString() + '_1', text: `Research: ${t.name}`, description: '', completed: false, estMinutes: 20 },
+                        { id: Date.now().toString() + '_2', text: 'Outline main concepts', description: '', completed: false, estMinutes: 30 },
+                        { id: Date.now().toString() + '_3', text: 'Draft actual content', description: '', completed: false, estMinutes: 60 },
+                        { id: Date.now().toString() + '_4', text: 'Review and refine', description: '', completed: false, estMinutes: 15 },
+                    ]
+                };
+            }
+            return t;
+        }));
+
+        /* --- API call (commented out until auth is fixed) ---
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+        setAiLoading(taskId);
+        try {
+            const response = await fetch('https://neurosync.azurewebsites.net/api/Tasks/create-task', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${TEMP_JWT}`,
+                },
+                body: JSON.stringify({ rawText: task.name }),
+            });
+            ... map data.microSteps ...
+        } catch (err) {
+            console.error('AI breakdown failed:', err);
+        } finally {
+            setAiLoading(null);
+        }
+        --- end API call --- */
     };
 
-    const handleStepToggle = (id) => {
-        setSteps(steps.map(s => s.id === id ? { ...s, completed: !s.completed } : s));
+    const handleTaskToggle = (taskId) => {
+        setTasks(tasks.map(t => {
+            if (t.id === taskId) {
+                return { ...t, completed: !t.completed };
+            }
+            return t;
+        }));
+    }
+
+    const handleStepToggle = (taskId, stepId) => {
+        setTasks(tasks.map(t => {
+            if (t.id === taskId) {
+                return { ...t, steps: t.steps.map(s => s.id === stepId ? { ...s, completed: !s.completed } : s) };
+            }
+            return t;
+        }));
     };
 
-    const handleStepTextChange = (id, newText) => {
-        setSteps(steps.map(s => s.id === id ? { ...s, text: newText } : s));
+    const handleStepTextChange = (taskId, stepId, newText) => {
+        setTasks(tasks.map(t => {
+            if (t.id === taskId) {
+                return { ...t, steps: t.steps.map(s => s.id === stepId ? { ...s, text: newText } : s) };
+            }
+            return t;
+        }));
     };
 
-    const handleStepTimeChange = (id, newTime) => {
+    const handleStepTimeChange = (taskId, stepId, newTime) => {
         const time = parseInt(newTime) || 0;
-        setSteps(steps.map(s => s.id === id ? { ...s, estMinutes: time } : s));
+        setTasks(tasks.map(t => {
+            if (t.id === taskId) {
+                return { ...t, steps: t.steps.map(s => s.id === stepId ? { ...s, estMinutes: time } : s) };
+            }
+            return t;
+        }));
     };
 
-    // Simple Drag & Drop Reordering
+    // Simple Drag & Drop Reordering (for subtasks of the expanded task)
     const handleDragStart = (e, id) => {
         setDraggedStepId(id);
         e.dataTransfer.effectAllowed = 'move';
-        // Hide standard HTML5 drag image for a cleaner look if desired, but native is okay
     };
 
-    const handleDragOver = (e, index) => {
+    const handleDragOver = (e, index, taskId) => {
         e.preventDefault();
         if (!draggedStepId) return;
 
-        const draggedIndex = steps.findIndex(s => s.id === draggedStepId);
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        const draggedIndex = task.steps.findIndex(s => s.id === draggedStepId);
         if (draggedIndex === index) return;
 
-        const newSteps = [...steps];
+        const newSteps = [...task.steps];
         const [removed] = newSteps.splice(draggedIndex, 1);
         newSteps.splice(index, 0, removed);
-        setSteps(newSteps);
+        
+        setTasks(tasks.map(t => t.id === taskId ? { ...t, steps: newSteps } : t));
     };
 
     const handleDragEnd = () => {
@@ -101,9 +299,8 @@ export default function TaskBuilder() {
     };
 
     // Computations
-    const totalEstMinutes = steps.reduce((acc, step) => acc + step.estMinutes, 0);
-    const completedStepsCount = steps.filter(s => s.completed).length;
-    const progressPercent = steps.length > 0 ? Math.round((completedStepsCount / steps.length) * 100) : 0;
+    const activeTask = tasks.find(t => t.id === expandedTaskId);
+    const totalEstMinutes = activeTask ? activeTask.steps.reduce((acc, step) => acc + step.estMinutes, 0) : 0;
 
     // Format minutes to hrs/mins
     const formatTime = (mins) => {
@@ -159,7 +356,9 @@ export default function TaskBuilder() {
                                     <Calendar size={18} className="text-gray-600" />
                                     <span>Upcoming</span>
                                 </div>
-                                <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">6</span>
+                                {tasks.length > 3 && (
+                                    <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{tasks.length - 3}</span>
+                                )}
                             </li>
                             <li className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-100 hover:border-gray-200 cursor-pointer transition-colors">
                                 <div className="flex items-center gap-3 text-[14px] font-medium text-gray-700">
@@ -254,148 +453,289 @@ export default function TaskBuilder() {
                             </div>
 
                             <div className="flex flex-wrap gap-3 pt-4 border-t border-[var(--color-border-color)]">
-                                <button className="px-5 py-2.5 rounded-[var(--radius-btn)] bg-[var(--color-brand-start)] text-white font-medium text-[14px] hover:bg-[var(--color-brand-mid)] transition-colors shadow-sm flex items-center gap-2">
+                                <button
+                                    onClick={handleCreateTask}
+                                    className="px-5 py-2.5 rounded-[var(--radius-btn)] bg-[var(--color-brand-start)] text-white font-medium text-[14px] hover:bg-[var(--color-brand-mid)] transition-colors shadow-sm flex items-center gap-2"
+                                >
                                     <Plus size={16} />
                                     Create Task
                                 </button>
                                 <button
-                                    onClick={handleAIBreakdown}
-                                    className="px-4 py-2.5 rounded-[var(--radius-btn)] bg-purple-50 text-purple-600 font-medium text-[14px] hover:bg-purple-100 transition-colors flex items-center gap-2"
+                                    onClick={handleAIBreakdownDraft}
+                                    disabled={aiLoading === 'draft'}
+                                    className="px-4 py-2.5 rounded-[var(--radius-btn)] bg-purple-50 text-purple-600 font-medium text-[14px] hover:bg-purple-100 transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-wait"
                                 >
-                                    <Sparkles size={16} />
-                                    AI Break Into Steps
+                                    {aiLoading === 'draft' ? (
+                                        <svg className="animate-spin" width={16} height={16} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40 20" /></svg>
+                                    ) : (
+                                        <Sparkles size={16} />
+                                    )}
+                                    {aiLoading === 'draft' ? 'Generating...' : 'AI Break Into Steps'}
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    {/* 2. AI Micro-Step Breakdown Section */}
-                    <div className="bg-white rounded-[var(--radius-card)] p-6 shadow-[var(--shadow-card)] border border-[var(--color-border-color)]">
-                        <div className="flex justify-between items-end mb-4">
+                    {/* 2. Tasks List / Action Steps */}
+                    <div>
+                        <div className="flex justify-between items-end mb-4 px-2">
                             <h3 className="text-[16px] font-bold text-[var(--color-text-primary)] flex items-center gap-2">
                                 <Target size={18} className="text-[var(--color-brand-start)]" />
                                 Action Steps
                             </h3>
-                            <button className="text-[13px] text-[var(--color-brand-start)] font-medium hover:underline flex items-center gap-1">
-                                <Plus size={14} /> Add Step
-                            </button>
                         </div>
 
-                        {/* Progress Bar */}
-                        <div className="mb-6">
-                            <div className="flex justify-between text-[12px] font-medium mb-1">
-                                <span className={progressPercent === 100 ? 'text-green-600' : 'text-[var(--color-text-secondary)]'}>
-                                    {progressPercent}% Completed
-                                </span>
-                                <span className="text-[var(--color-text-muted)]">{completedStepsCount} of {steps.length}</span>
-                            </div>
-                            <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                                <div
-                                    className={`h-2 rounded-full transition-all duration-500 ${progressPercent === 100 ? 'bg-green-500' : 'bg-[var(--color-brand-start)]'}`}
-                                    style={{ width: `${progressPercent}%` }}
-                                ></div>
-                            </div>
-                        </div>
-
-                        {/* Parent Context Header (If applicable) */}
-                        {taskName && (
-                            <div className="mb-4 p-3 bg-[var(--color-bg-light)] border border-gray-200 rounded-xl flex items-start gap-3">
-                                <div className="mt-0.5">
-                                    {progressPercent === 100 ? (
-                                        <CheckCircle2 size={18} className="text-green-500" />
-                                    ) : (
-                                        <Circle size={18} className="text-[var(--color-brand-start)]" />
-                                    )}
-                                </div>
-                                <div>
-                                    <h4 className="text-[14px] font-bold text-[var(--color-text-primary)]">{taskName}</h4>
-                                    {taskDesc && <p className="text-[12px] text-gray-500 line-clamp-2 mt-0.5">{taskDesc}</p>}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Checklist */}
-                        <div className="space-y-2 relative pl-2">
-                            {/* Connector line if parent exists */}
-                            {taskName && steps.length > 0 && (
-                                <div className="absolute left-4 top-0 bottom-6 w-px bg-gray-200 -z-10"></div>
-                            )}
-
-                            {steps.length === 0 && (
+                        {/* List of Tasks */}
+                        <div className="space-y-4">
+                            {tasks.length === 0 && (
                                 <div className="text-center py-8 text-gray-400 text-sm border-2 border-dashed border-gray-100 rounded-lg">
-                                    No steps yet. Use AI to generate steps or add manually.
+                                    No tasks yet. Create one above.
                                 </div>
                             )}
 
-                            {steps.map((step, index) => {
-                                const isCurrentFocus = focusMode && !step.completed && steps.findIndex(s => !s.completed) === index;
-                                const isCollapsed = focusMode && !isCurrentFocus && !step.completed;
-
-                                if (isCollapsed) {
-                                    return (
-                                        <div key={step.id} className="py-2 px-4 rounded-lg bg-gray-50 flex items-center justify-between text-gray-400 opacity-50 scale-95 origin-left transition-all duration-300 ml-6">
-                                            <span className="text-sm truncate">{step.text}</span>
-                                        </div>
-                                    );
-                                }
+                            {tasks.slice(0, 3).map((task) => {
+                                const isExpanded = expandedTaskId === task.id;
+                                const completedStepsCount = task.steps.filter(s => s.completed).length;
+                                const progressPercent = task.steps.length > 0 ? Math.round((completedStepsCount / task.steps.length) * 100) : 0;
 
                                 return (
-                                    <div
-                                        key={step.id}
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, step.id)}
-                                        onDragOver={(e) => handleDragOver(e, index)}
-                                        onDragEnd={handleDragEnd}
-                                        className={`group flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 cursor-grab active:cursor-grabbing relative
-                                            ${taskName ? 'ml-6' : ''}
-                                            ${step.completed ? 'bg-gray-50 border-gray-100' : 'bg-white border-gray-200 hover:border-gray-300'}
-                                            ${isCurrentFocus ? 'ring-2 ring-[var(--color-brand-start)] ring-offset-2 border-transparent scale-[1.01] shadow-md bg-blue-50/30' : ''}
-                                            ${draggedStepId === step.id ? 'opacity-50' : 'opacity-100'}
-                                        `}
-                                    >
-                                        {/* Connector branch if parent exists */}
-                                        {taskName && (
-                                            <div className="absolute -left-6 top-1/2 w-4 h-px bg-gray-200"></div>
-                                        )}
-
-                                        {/* Drag Handle */}
-                                        <div className="text-gray-300 hover:text-gray-500 transition-colors">
-                                            <GripVertical size={16} />
-                                        </div>
-
-                                        {/* Checkbox */}
-                                        <button
-                                            onClick={() => handleStepToggle(step.id)}
-                                            className="flex-shrink-0 focus:outline-none"
+                                    <div key={task.id} className="bg-white rounded-[var(--radius-card)] shadow-[var(--shadow-card)] border border-[var(--color-border-color)] transition-all duration-200 hover:shadow-md overflow-hidden">
+                                        {/* Task Overview / Header */}
+                                        <div 
+                                            className={`p-5 flex items-start gap-4 cursor-pointer transition-colors ${isExpanded ? 'bg-gray-50/50' : 'bg-white'}`}
+                                            onClick={() => setExpandedTaskId(isExpanded ? null : task.id)}
                                         >
-                                            {step.completed ? (
-                                                <CheckCircle2 size={20} className="text-green-500" />
-                                            ) : (
-                                                <Circle size={20} className="text-gray-300 hover:text-[var(--color-brand-start)] transition-colors" />
-                                            )}
-                                        </button>
+                                            {/* Checkbox */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleTaskToggle(task.id);
+                                                }}
+                                                className="flex-shrink-0 focus:outline-none mt-1 transition-transform active:scale-95"
+                                            >
+                                                {task.completed ? (
+                                                    <div className="w-[18px] h-[18px] rounded flex items-center justify-center bg-amber-400">
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                            <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                                                        </svg>
+                                                    </div>
+                                                ) : (
+                                                    <div className="w-[18px] h-[18px] rounded border-2 border-gray-300 hover:border-gray-400 transition-colors bg-white"></div>
+                                                )}
+                                            </button>
 
-                                        {/* Step Text (Inline Editable) */}
-                                        <input
-                                            type="text"
-                                            value={step.text}
-                                            onChange={(e) => handleStepTextChange(step.id, e.target.value)}
-                                            className={`flex-1 bg-transparent border-none outline-none focus:ring-0 p-0 text-[14px] font-medium
-                                                ${step.completed ? 'text-gray-400 line-through' : 'text-[var(--color-text-primary)]'}
-                                            `}
-                                        />
+                                            {/* Content */}
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className={`text-[16px] font-semibold tracking-tight ${task.completed ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                                                    {task.name}
+                                                </h3>
+                                                {task.description && (
+                                                    <p className={`text-[13px] mt-1 line-clamp-2 ${task.completed ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                        {task.description}
+                                                    </p>
+                                                )}
 
-                                        {/* Estimated Time (Inline Editable) */}
-                                        <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                                            <Clock size={12} className="text-gray-400" />
-                                            <input
-                                                type="number"
-                                                value={step.estMinutes}
-                                                onChange={(e) => handleStepTimeChange(step.id, e.target.value)}
-                                                className="w-10 bg-transparent text-right border-none outline-none focus:ring-1 focus:ring-gray-200 rounded p-0 text-[12px] text-gray-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                            />
-                                            <span className="text-[12px] text-gray-500">m</span>
+                                                {/* Meta Row: Date, Related, Assignee */}
+                                                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-3">
+                                                    <div className="flex items-center gap-1.5 text-[12px] font-medium text-gray-500">
+                                                        <Calendar size={14} className="text-gray-400" />
+                                                        {task.dueDate}
+                                                    </div>
+                                                    {task.relatedTo && (
+                                                        <div className="flex items-center gap-1.5 text-[12px] font-medium text-amber-600">
+                                                            <span className="text-gray-400">Related to:</span> {task.relatedTo}
+                                                        </div>
+                                                    )}
+                                                    {task.assignee && (
+                                                        <div className="flex items-center gap-2">
+                                                            <img src={task.assignee.avatar} alt={task.assignee.name} className="w-6 h-6 rounded-full object-cover border border-gray-200" />
+                                                            <span className="text-[12px] font-bold text-gray-900">{task.assignee.name}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Tags/Badges */}
+                                            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 mt-1">
+                                                {task.tags.map((tag, idx) => {
+                                                    let tagClasses = "px-2 tracking-wide py-0.5 rounded text-[11px] font-bold flex items-center gap-1 capitalize whitespace-nowrap ";
+                                                    let icon = null;
+                                                    
+                                                    if (tag.type === 'priority') {
+                                                        if (tag.label === 'high') tagClasses += "bg-red-50 text-red-500";
+                                                        else if (tag.label === 'medium') tagClasses += "bg-amber-50 text-amber-500";
+                                                        else tagClasses += "bg-green-50 text-green-500";
+                                                        
+                                                        if (tag.icon === 'flag') {
+                                                            icon = (
+                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                                                                    <line x1="4" y1="22" x2="4" y2="15"></line>
+                                                                </svg>
+                                                            );
+                                                        }
+                                                    } else if (tag.type === 'category') {
+                                                         if (tag.label === 'call') tagClasses += "bg-green-100 text-green-600";
+                                                         else if (tag.label === 'email') tagClasses += "bg-blue-100 text-blue-600";
+                                                         else if (tag.label === 'meeting') tagClasses += "bg-purple-100 text-purple-600";
+                                                         else tagClasses += "bg-yellow-100 text-yellow-700";
+                                                    }
+                                                    return (
+                                                        <span key={`${task.id}-tag-${idx}`} className={tagClasses}>
+                                                            {icon}{tag.label}
+                                                        </span>
+                                                    )
+                                                })}
+                                            </div>
                                         </div>
+
+                                        {/* Expanded Subtasks Area */}
+                                        {isExpanded && (
+                                            <div className="border-t border-gray-100 bg-white p-5 cursor-default">
+                                                <div className="flex justify-between items-end mb-4">
+                                                    <div>
+                                                        <h4 className="text-[14px] font-bold text-gray-900">Subtasks</h4>
+                                                        <div className="flex items-center gap-3 mt-1">
+                                                            <div className="w-32 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                                                <div
+                                                                    className={`h-1.5 rounded-full transition-all duration-500 ${progressPercent === 100 ? 'bg-green-500' : 'bg-[var(--color-brand-start)]'}`}
+                                                                    style={{ width: `${progressPercent}%` }}
+                                                                ></div>
+                                                            </div>
+                                                            <span className="text-[11px] font-medium text-gray-500">{progressPercent}%</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleAIBreakdown(task.id)}
+                                                            disabled={aiLoading === task.id}
+                                                            className="px-3 py-1.5 rounded bg-purple-50 text-purple-600 font-medium text-[12px] hover:bg-purple-100 transition-colors flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-wait"
+                                                        >
+                                                            {aiLoading === task.id ? (
+                                                                <svg className="animate-spin" width={14} height={14} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40 20" /></svg>
+                                                            ) : (
+                                                                <Sparkles size={14} />
+                                                            )}
+                                                            {aiLoading === task.id ? 'Generating...' : 'AI Break Into Steps'}
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                const newStep = { id: Date.now().toString(), text: '', completed: false, estMinutes: 10 };
+                                                                setTasks(tasks.map(t => t.id === task.id ? { ...t, steps: [...t.steps, newStep] } : t));
+                                                            }}
+                                                            className="text-[12px] text-[var(--color-brand-start)] font-medium hover:underline flex items-center gap-1 p-1.5"
+                                                        >
+                                                            <Plus size={14} /> Add Step
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    {/* AI Summary Banner */}
+                                                    {task.aiSummary && (
+                                                        <div className="mb-3 p-3 rounded-lg bg-purple-50 border border-purple-100 flex gap-2">
+                                                            <Sparkles size={14} className="text-purple-400 mt-0.5 flex-shrink-0" />
+                                                            <p className="text-[12px] text-purple-700 leading-relaxed">{task.aiSummary}</p>
+                                                        </div>
+                                                    )}
+                                                    {/* Loading Skeleton */}
+                                                    {aiLoading === task.id && (
+                                                        <div className="space-y-2 animate-pulse">
+                                                            {[1,2,3].map(i => (
+                                                                <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50">
+                                                                    <div className="w-4 h-4 rounded-full bg-gray-200" />
+                                                                    <div className="flex-1 h-3 rounded bg-gray-200" />
+                                                                    <div className="w-10 h-3 rounded bg-gray-200" />
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {task.steps.length === 0 && aiLoading !== task.id && (
+                                                        <div className="text-center py-6 text-gray-400 text-sm border-2 border-dashed border-gray-100 rounded-lg">
+                                                            No steps yet. Use AI to generate steps or add manually.
+                                                        </div>
+                                                    )}
+
+                                                    {task.steps.map((step, index) => {
+                                                        const isCurrentFocus = focusMode && !step.completed && task.steps.findIndex(s => !s.completed) === index;
+                                                        const isCollapsed = focusMode && !isCurrentFocus && !step.completed;
+
+                                                        if (isCollapsed) {
+                                                            return (
+                                                                <div key={step.id} className="py-2 px-4 rounded-lg bg-gray-50 flex items-center justify-between text-gray-400 opacity-50 scale-95 origin-left transition-all duration-300 ml-6">
+                                                                    <span className="text-sm truncate">{step.text}</span>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        return (
+                                                            <div
+                                                                key={step.id}
+                                                                draggable
+                                                                onDragStart={(e) => handleDragStart(e, step.id)}
+                                                                onDragOver={(e) => handleDragOver(e, index, task.id)}
+                                                                onDragEnd={handleDragEnd}
+                                                                className={`group flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 cursor-grab active:cursor-grabbing relative
+                                                                    ${step.completed ? 'bg-gray-50 border-gray-100' : 'bg-white border-gray-200 hover:border-gray-300'}
+                                                                    ${isCurrentFocus ? 'ring-2 ring-[var(--color-brand-start)] ring-offset-2 border-transparent scale-[1.01] shadow-md bg-blue-50/30' : ''}
+                                                                    ${draggedStepId === step.id ? 'opacity-50' : 'opacity-100'}
+                                                                `}
+                                                            >
+                                                                {/* Checkbox */}
+                                                                <button
+                                                                    onClick={() => handleStepToggle(task.id, step.id)}
+                                                                    className="flex-shrink-0 focus:outline-none ml-2"
+                                                                >
+                                                                    {step.completed ? (
+                                                                        <CheckCircle2 size={18} className="text-green-500" />
+                                                                    ) : (
+                                                                        <Circle size={18} className="text-gray-300 hover:text-[var(--color-brand-start)] transition-colors" />
+                                                                    )}
+                                                                </button>
+
+                                                                {/* Step Text (Inline Editable) + AI Description */}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={step.text}
+                                                                        placeholder="Type step task..."
+                                                                        onChange={(e) => handleStepTextChange(task.id, step.id, e.target.value)}
+                                                                        className={`w-full bg-transparent border-none outline-none focus:ring-0 p-0 text-[13px] font-medium
+                                                                            ${step.completed ? 'text-gray-400 line-through' : 'text-gray-700'}
+                                                                        `}
+                                                                    />
+                                                                    {step.description && (
+                                                                        <p className={`text-[11px] mt-0.5 leading-relaxed ${step.completed ? 'text-gray-300' : 'text-gray-400'}`}>
+                                                                            {step.description}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Estimated Time (Inline Editable) */}
+                                                                <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                                    <Clock size={12} className="text-gray-400" />
+                                                                    <input
+                                                                        type="number"
+                                                                        value={step.estMinutes}
+                                                                        onChange={(e) => handleStepTimeChange(task.id, step.id, e.target.value)}
+                                                                        className="w-10 bg-transparent text-right border-none outline-none focus:ring-0 rounded p-0 text-[12px] text-gray-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                                    />
+                                                                    <span className="text-[12px] text-gray-500 mr-2">m</span>
+                                                                </div>
+
+                                                                {/* Delete Step */}
+                                                                <button 
+                                                                    onClick={() => setTasks(tasks.map(t => t.id === task.id ? { ...t, steps: t.steps.filter(s => s.id !== step.id) } : t))}
+                                                                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
+                                                                >
+                                                                    <Trash size={14} />
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}

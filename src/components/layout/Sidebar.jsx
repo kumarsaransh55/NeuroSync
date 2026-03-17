@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard,
     CheckSquare,
@@ -25,8 +25,21 @@ const generalMenuItems = [
     { id: 'logout', name: 'Logout', icon: LogOut },
 ];
 
-export default function Sidebar({ activeView = 'dashboard', onViewChange }) {
+export default function Sidebar() {
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const getActiveView = () => {
+        const path = location.pathname;
+        if (path.includes('/dashboard/tasks')) return 'tasks';
+        if (path.includes('/dashboard/summarizer')) return 'summarizer';
+        if (path.includes('/dashboard/analytics')) return 'analytics';
+        if (path.includes('/dashboard/team')) return 'team';
+        if (path.includes('/dashboard/settings')) return 'settings';
+        return 'dashboard';
+    };
+
+    const activeView = getActiveView();
 
     const handleLogout = (e) => {
         e.preventDefault();
@@ -59,7 +72,11 @@ export default function Sidebar({ activeView = 'dashboard', onViewChange }) {
                                         href="#"
                                         onClick={(e) => {
                                             e.preventDefault();
-                                            if (onViewChange) onViewChange(item.id);
+                                            if (item.id === 'dashboard') {
+                                                navigate('/dashboard');
+                                            } else {
+                                                navigate(`/dashboard/${item.id}`);
+                                            }
                                         }}
                                         className={`flex items-center justify-between py-3 px-6 transition-all duration-200 ${isActive
                                             ? 'bg-[var(--color-success-bg)] text-[var(--color-brand-end)] border-l-4 border-[var(--color-brand-end)]'
@@ -96,8 +113,8 @@ export default function Sidebar({ activeView = 'dashboard', onViewChange }) {
                                             e.preventDefault();
                                             if (item.id === 'logout') {
                                                 handleLogout(e);
-                                            } else if (onViewChange) {
-                                                onViewChange(item.id);
+                                            } else {
+                                                navigate(`/dashboard/${item.id}`);
                                             }
                                         }}
                                         className={`flex items-center gap-3 py-3 px-6 text-[14px] font-medium transition-all duration-200 ${isActive
