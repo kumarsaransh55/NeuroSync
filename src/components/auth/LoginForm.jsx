@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { api, setToken } from '../../api/client';
 
 export default function LoginForm() {
     const [email, setEmail] = useState('');
@@ -7,14 +8,6 @@ export default function LoginForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
     const navigate = useNavigate();
-
-    // Helper to extract cookie value
-    const getCookie = (name) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -28,56 +21,14 @@ export default function LoginForm() {
         setErrorMsg('');
 
         try {
-            const response = await fetch("https://neurosync.azurewebsites.net/api/Auth/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                // Pass credentials to allow the backend to drop cookies if necessary
-                credentials: 'include',
-                body: JSON.stringify({
-                    email,
-                    password
-                })
-            });
-           
-            if (response.ok) {
-                // Determine token from response or cookies natively
-                let token = null;
-
-                // Trying to extract from JSON body first (common fallback if cookie header is locked)
-                try {
-                    const data = await response.json();
-                    if (data && data.token) token = data.token;
-                    else if (data && data.neurosync_jwt) token = data.neurosync_jwt;
-                } catch (e) {
-                    console.log("No JSON body or parse error", e);
-                }
-
-                // If not found in body, extract from Cookies explicitly per request
-                if (!token) {
-                    token = getCookie('neurosync_jwt');
-                }
- 
-                if (token) {
-                    localStorage.setItem('neurosync_jwt', token);
-                } else {
-                    console.warn("Could not find 'neurosync_jwt' gracefully. The backend response might have it locked as HttpOnly or there's a different property name.");
-                }
-                 console.log("token",token)
-                localStorage.setItem("isAuthenticated", "true");
-                navigate('/dashboard');
-            } else {
-                let errText = "Invalid email or password";
-                try {
-                    const errorObj = await response.json();
-                    if (errorObj && errorObj.message) errText = errorObj.message;
-                } catch (e) { }
-                setErrorMsg(errText);
-            }
+            const data = await api.login(email, password);
+            // Backend returns the JWT in the body so this SPA can store it and
+            // send it as an Authorization: Bearer header on later requests.
+            if (data?.token) setToken(data.token);
+            localStorage.setItem('isAuthenticated', 'true');
+            navigate('/dashboard');
         } catch (error) {
-            console.error("Login Error:", error);
-            setErrorMsg("Network error. Could not connect to the server.");
+            setErrorMsg(error.message || 'Could not log in. Please try again.');
         } finally {
             setIsLoading(false);
         }

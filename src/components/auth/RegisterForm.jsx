@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../../api/client';
 
 export default function RegisterForm() {
     const [fullName, setFullName] = useState('');
@@ -26,44 +27,11 @@ export default function RegisterForm() {
         }
 
         try {
-            const response = await fetch("https://neurosync.azurewebsites.net/api/Auth/register", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    email: email,
-                    fullName: fullName,
-                    password: password
-                })
-            });
-
-            if (response.ok) {
-                // Success logic
-                setSuccessMsg("Registration successful! Redirecting to login...");
-                setTimeout(() => {
-                    navigate('/login');
-                }, 2000);
-            } else {
-                // Error handling (e.g. Email exists, Weak Password, etc.)
-                let errText = "Registration failed. Please try again.";
-                try {
-                    const errorObj = await response.json();
-                    if (errorObj && errorObj.message) errText = errorObj.message;
-                    // Sometimes .NET identity returns errors array
-                    if (errorObj && errorObj.errors) {
-                        const firstKey = Object.keys(errorObj.errors)[0];
-                        if (firstKey) errText = errorObj.errors[firstKey][0];
-                    }
-                } catch (jsonError) {
-                    console.log("Could not parse error JSON", jsonError);
-                }
-
-                setErrorMsg(errText);
-            }
-        } catch (networkError) {
-            console.error("Network Error:", networkError);
-            setErrorMsg("Network error. Could not connect to the server.");
+            await api.register(email, fullName, password);
+            setSuccessMsg("Registration successful! Redirecting to login...");
+            setTimeout(() => navigate('/login'), 2000);
+        } catch (error) {
+            setErrorMsg(error.message || "Registration failed. Please try again.");
         } finally {
             setIsLoading(false);
         }

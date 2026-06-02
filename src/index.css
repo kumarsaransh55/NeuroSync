@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import url('https://fonts.cdnfonts.com/css/opendyslexic');
 
 @theme {
   --color-brand-start: #0F3D2E;
@@ -70,5 +69,26 @@
   /* Basic Dark Mode shell (to be expanded) */
   html.dark {
     filter: invert(1) hue-rotate(180deg);
+  }
+}
+
+/* Keyboard focus: a clear, consistent focus ring for ALL interactive elements.
+   Many icon-only buttons had no visible focus state, which blocked keyboard users. */
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Sensory-friendly: honour the OS "reduce motion" setting by neutralising
+   animations and transitions for people who ask for less movement. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -21,7 +21,7 @@ export default function EmailDocumentSummarizer() {
     };
 
     return (
-        <div className={`w-full ${dyslexiaMode ? 'font-dyslexic' : ''}`}>
+        <div className={`w-full ${dyslexiaMode ? 'font-dyslexia' : ''}`}>
             {/* Accessibility Toggles */}
             <div className="flex justify-end items-center gap-6 mb-6 px-2">
                 <label className="flex items-center gap-2 cursor-pointer">

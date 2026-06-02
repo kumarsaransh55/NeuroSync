@@ -12,12 +12,19 @@ export default function Layout({
 }) {
     return (
         <div className="flex bg-[var(--color-bg-light)] min-h-screen font-sans text-[var(--color-text-primary)]">
+            {/* Skip link: first focusable element, visible only when focused (keyboard users) */}
+            <a
+                href="#main-content"
+                className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-3 focus:left-3 focus:px-4 focus:py-2 focus:rounded-lg focus:bg-[var(--color-brand-start)] focus:text-white focus:shadow-lg"
+            >
+                Skip to main content
+            </a>
             <Sidebar />
 
             <div className="flex-1 flex flex-col min-w-0">
                 <Header focusMode={focusMode} setFocusMode={setFocusMode} />
 
-                <main className="p-8 flex-1 overflow-x-hidden overflow-y-auto w-full">
+                <main id="main-content" tabIndex={-1} className="p-8 flex-1 overflow-x-hidden overflow-y-auto w-full">
                     <div className="max-w-[1600px] mx-auto w-full">
 
                         {/* Dashboard Title & Actions */}

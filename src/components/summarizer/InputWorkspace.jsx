@@ -1,74 +1,76 @@
 import React, { useState } from 'react';
 import UploadZone from './UploadZone';
-import { Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Loader2, Sparkles, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { api } from '../../api/client';
+
+// Map the backend DocumentAnalysisResult into the shape the result cards expect.
+const mapAnalysis = (d = {}) => {
+    const noDeadline = !d.deadline || /no specific deadline|none/i.test(d.deadline);
+    const tone = d.tone || 'Neutral';
+    return {
+        summary: d.summary || '',
+        actionItems: (d.actionItems || []).map((text, i) => ({ id: i + 1, text, completed: false })),
+        deadlines: noDeadline
+            ? []
+            : [{
+                id: 1,
+                task: 'Deadline mentioned',
+                date: d.deadline,
+                urgency: /urgent|today|asap|tomorrow/i.test(d.deadline) ? 'high' : 'medium',
+            }],
+        tone: { primary: tone, secondary: '', warning: /(urgent|demanding|angry|critical)/i.test(tone) },
+        hiddenTasks: (d.hiddenTasks || []).map((text, i) => ({ id: i + 1, text, context: 'Implied by the message' })),
+        highlights: d.highlights || [],
+        simplified: d.simplifiedText || '',
+    };
+};
 
 export default function InputWorkspace({ onAnalyzeComplete }) {
     const [textContent, setTextContent] = useState('');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analyzingStatus, setAnalyzingStatus] = useState('');
     const [analysisComplete, setAnalysisComplete] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
 
     const handleFileSelect = (file) => {
-        // Simulate file reading/parsing
+        if (!file) return;
+        setErrorMsg('');
         setIsAnalyzing(true);
-        setAnalyzingStatus('Extracting text from document...');
-        setAnalysisComplete(false);
+        setAnalyzingStatus(`Reading ${file.name}...`);
 
-        setTimeout(() => {
-            setTextContent(`[Extracted from ${file.name}]\n\nWe are excited to announce Q3 planning...`);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            setTextContent(String(e.target?.result || ''));
             setIsAnalyzing(false);
             setAnalyzingStatus('');
-        }, 1500);
+        };
+        reader.onerror = () => {
+            setErrorMsg('Could not read that file. Please paste the text instead.');
+            setIsAnalyzing(false);
+            setAnalyzingStatus('');
+        };
+        reader.readAsText(file);
     };
 
-    const handleGenerateSummary = () => {
+    const handleGenerateSummary = async () => {
         if (!textContent.trim()) return;
 
+        setErrorMsg('');
         setIsAnalyzing(true);
         setAnalysisComplete(false);
-        setAnalyzingStatus('AI is analyzing content...');
+        setAnalyzingStatus('NeuroSync is reading your text...');
 
-        setTimeout(() => {
-            setAnalyzingStatus('Generating key highlights...');
-            setTimeout(() => {
-                setAnalyzingStatus('Extracting action items...');
-                setTimeout(() => {
-                    setIsAnalyzing(false);
-                    setAnalyzingStatus('');
-                    setAnalysisComplete(true);
-
-                    // Pass mock data up to parent
-                    if (onAnalyzeComplete) {
-                        onAnalyzeComplete({
-                            summary: "The attached document outlines the Q3 planning initiatives. Key focuses are adjusting the marketing budget to prioritize digital campaigns over print, and launching the new product line feature by mid-August.",
-                            actionItems: [
-                                { id: 1, text: "Review redistributed marketing budget", completed: false },
-                                { id: 2, text: "Finalize August launch timeline", completed: false },
-                                { id: 3, text: "Schedule sync with print vendors to cancel orders", completed: false }
-                            ],
-                            deadlines: [
-                                { id: 1, task: "Marketing Budget Review", date: "July 15, 2026", urgency: "high" },
-                                { id: 2, task: "Cancel Print Orders", date: "July 20, 2026", urgency: "medium" },
-                                { id: 3, task: "New Feature Launch", date: "August 15, 2026", urgency: "high" }
-                            ],
-                            tone: { primary: "Urgent", secondary: "Optimistic", warning: false },
-                            hiddenTasks: [
-                                { id: 1, text: "Inform creative team of digital pivot", context: "Implied by budget shift" }
-                            ],
-                            highlights: [
-                                "Pivot to digital marketing",
-                                "August 15th feature launch date",
-                                "Budget reallocation required"
-                            ],
-                            simplified: "We are changing our Q3 plan. We will spend more money on internet ads and less on paper ads. We need to finish our new product feature by August 15th so we can launch it."
-                        });
-                    }
-
-                    // Reset success message after a few seconds
-                    setTimeout(() => setAnalysisComplete(false), 3000);
-                }, 1000);
-            }, 1000);
-        }, 1000);
+        try {
+            const data = await api.analyzeDocument(textContent);
+            if (onAnalyzeComplete) onAnalyzeComplete(mapAnalysis(data));
+            setAnalysisComplete(true);
+            setTimeout(() => setAnalysisComplete(false), 3000);
+        } catch (error) {
+            setErrorMsg(error.message || 'Could not analyze the text. Please try again.');
+        } finally {
+            setIsAnalyzing(false);
+            setAnalyzingStatus('');
+        }
     };
 
     return (
@@ -86,6 +88,14 @@ export default function InputWorkspace({ onAnalyzeComplete }) {
             )}
 
             <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">Input Content</h2>
+
+            {/* Error banner */}
+            {errorMsg && (
+                <div className="mb-4 flex items-start gap-2 bg-red-50 text-red-700 border border-red-100 rounded-[var(--radius-btn)] p-3 text-[13px]">
+                    <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
+                    <span>{errorMsg}</span>
+                </div>
+            )}
 
             {/* Main Textarea */}
             <div className="mb-6">
@@ -116,12 +126,14 @@ export default function InputWorkspace({ onAnalyzeComplete }) {
                     )}
                 </button>
                 <button
+                    onClick={handleGenerateSummary}
                     disabled={!textContent.trim() || isAnalyzing}
                     className="px-5 py-2.5 rounded-[var(--radius-btn)] bg-white border border-[var(--color-brand-start)] text-[var(--color-brand-start)] font-medium text-[14px] hover:bg-[#ECFDF5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Simplify Language
                 </button>
                 <button
+                    onClick={handleGenerateSummary}
                     disabled={!textContent.trim() || isAnalyzing}
                     className="px-5 py-2.5 rounded-[var(--radius-btn)] bg-white border border-[var(--color-brand-start)] text-[var(--color-brand-start)] font-medium text-[14px] hover:bg-[#ECFDF5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >

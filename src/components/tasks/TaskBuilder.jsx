@@ -5,6 +5,7 @@ import {
     MoreVertical, ChevronDown, Inbox, Star, History, Trash, Briefcase, User
 } from 'lucide-react';
 import GmailInboxModal from './GmailInboxModal';
+import { api } from '../../api/client';
 
 export default function TaskBuilder() {
     // 1. Task Details State
@@ -149,12 +150,29 @@ export default function TaskBuilder() {
     }
 
 
-    const TEMP_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJmYTliM2VmNi0yMGQ5LTRhOTktYTFmNC0xYWYzNjIwMTBjMGUiLCJlbWFpbCI6InNhbEBnbWFpbC5jb20iLCJ1bmlxdWVfbmFtZSI6InNhbGx1IiwibmJmIjoxNzczMDc0MTU1LCJleHAiOjE3NzM2Nzg5NTUsImlhdCI6MTc3MzA3NDE1NSwiaXNzIjoiTmV1cm9TeW5jQXBpIiwiYXVkIjoiTmV1cm9TeW5jVXNlcnMifQ.plyYeabARwFNvYDFuqzVxBq14j287-W5RQJO3za_E4o';
+    // Map the backend TaskItem.microSteps into the UI's step shape.
+    const mapMicroSteps = (microSteps = []) =>
+        [...microSteps]
+            .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+            .map((s, i) => ({
+                id: `${s.id ?? 'step'}-${i}`,
+                text: s.heading || '',
+                description: s.description || '',
+                completed: !!s.isCompleted,
+                estMinutes: Number(s.estimatedMinutes) || 0,
+            }));
 
-    const handleAIBreakdownDraft = () => {
-        if (!taskName) return;
-        const newTask = {
-            id: Date.now().toString(),
+    // "AI Break Into Steps" from the create box: makes a real call to the
+    // backend, which uses Gemini to break the text into micro-steps.
+    const handleAIBreakdownDraft = async () => {
+        if (!taskName.trim()) return;
+
+        const tempId = Date.now().toString();
+        const rawText = taskDesc.trim() ? `${taskName}\n\n${taskDesc}` : taskName;
+
+        // Show the card immediately with a loading state, then fill it in.
+        const placeholder = {
+            id: tempId,
             name: taskName,
             description: taskDesc,
             completed: false,
@@ -162,76 +180,50 @@ export default function TaskBuilder() {
             relatedTo: 'General',
             assignee: { name: 'Me', avatar: `https://ui-avatars.com/api/?name=Me&background=random` },
             tags: [],
-            steps: [
-                { id: Date.now().toString() + '_1', text: `Research: ${taskName}`, description: '', completed: false, estMinutes: 20 },
-                { id: Date.now().toString() + '_2', text: 'Outline main concepts', description: '', completed: false, estMinutes: 30 },
-                { id: Date.now().toString() + '_3', text: 'Draft actual content', description: '', completed: false, estMinutes: 60 },
-                { id: Date.now().toString() + '_4', text: 'Review and refine', description: '', completed: false, estMinutes: 15 },
-            ]
+            steps: [],
         };
-        setTasks(prev => [newTask, ...prev]);
-        setExpandedTaskId(newTask.id);
+        setTasks(prev => [placeholder, ...prev]);
+        setExpandedTaskId(tempId);
         setTaskName('');
         setTaskDesc('');
+        setAiLoading(tempId);
 
-        /* --- API call (commented out until auth is fixed) ---
-        setAiLoading('draft');
         try {
-            const response = await fetch('https://neurosync.azurewebsites.net/api/Tasks/create-task', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${TEMP_JWT}`,
-                },
-                body: JSON.stringify({ rawText: taskName }),
-            });
-            if (!response.ok) throw new Error('API error');
-            const data = await response.json();
-            ... map data.microSteps ...
+            const data = await api.createTask(rawText);
+            const steps = mapMicroSteps(data.microSteps);
+            setTasks(prev => prev.map(t =>
+                t.id === tempId
+                    ? { ...t, name: data.title || t.name, aiSummary: data.summary || '', aiError: null, steps }
+                    : t
+            ));
         } catch (err) {
-            console.error('AI breakdown failed:', err);
+            setTasks(prev => prev.map(t => t.id === tempId ? { ...t, aiError: err.message } : t));
         } finally {
             setAiLoading(null);
         }
-        --- end API call --- */
-    }
+    };
 
-    const handleAIBreakdown = (taskId) => {
-        setTasks(tasks.map(t => {
-            if (t.id === taskId) {
-                return {
-                    ...t,
-                    steps: [
-                        { id: Date.now().toString() + '_1', text: `Research: ${t.name}`, description: '', completed: false, estMinutes: 20 },
-                        { id: Date.now().toString() + '_2', text: 'Outline main concepts', description: '', completed: false, estMinutes: 30 },
-                        { id: Date.now().toString() + '_3', text: 'Draft actual content', description: '', completed: false, estMinutes: 60 },
-                        { id: Date.now().toString() + '_4', text: 'Review and refine', description: '', completed: false, estMinutes: 15 },
-                    ]
-                };
-            }
-            return t;
-        }));
-
-        /* --- API call (commented out until auth is fixed) ---
+    // "AI Break Into Steps" on an existing task card.
+    const handleAIBreakdown = async (taskId) => {
         const task = tasks.find(t => t.id === taskId);
         if (!task) return;
+
+        const rawText = task.description?.trim() ? `${task.name}\n\n${task.description}` : task.name;
         setAiLoading(taskId);
+
         try {
-            const response = await fetch('https://neurosync.azurewebsites.net/api/Tasks/create-task', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${TEMP_JWT}`,
-                },
-                body: JSON.stringify({ rawText: task.name }),
-            });
-            ... map data.microSteps ...
+            const data = await api.createTask(rawText);
+            const steps = mapMicroSteps(data.microSteps);
+            setTasks(prev => prev.map(t =>
+                t.id === taskId
+                    ? { ...t, aiSummary: data.summary || t.aiSummary, aiError: null, steps }
+                    : t
+            ));
         } catch (err) {
-            console.error('AI breakdown failed:', err);
+            setTasks(prev => prev.map(t => t.id === taskId ? { ...t, aiError: err.message } : t));
         } finally {
             setAiLoading(null);
         }
-        --- end API call --- */
     };
 
     const handleTaskToggle = (taskId) => {
@@ -636,6 +628,13 @@ export default function TaskBuilder() {
                                                         <div className="mb-3 p-3 rounded-lg bg-purple-50 border border-purple-100 flex gap-2">
                                                             <Sparkles size={14} className="text-purple-400 mt-0.5 flex-shrink-0" />
                                                             <p className="text-[12px] text-purple-700 leading-relaxed">{task.aiSummary}</p>
+                                                        </div>
+                                                    )}
+                                                    {/* AI Error Banner */}
+                                                    {task.aiError && (
+                                                        <div className="mb-3 p-3 rounded-lg bg-red-50 border border-red-100 flex gap-2">
+                                                            <ShieldAlert size={14} className="text-red-400 mt-0.5 flex-shrink-0" />
+                                                            <p className="text-[12px] text-red-600 leading-relaxed">{task.aiError}</p>
                                                         </div>
                                                     )}
                                                     {/* Loading Skeleton */}
