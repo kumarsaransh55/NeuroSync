@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Sparkles, Mail, GripVertical, CheckCircle2, Circle,
     Clock, Calendar, Bell, ShieldAlert, Play, Target, Plus,
     MoreVertical, ChevronDown, Inbox, Star, History, Trash, Briefcase, User
 } from 'lucide-react';
-import GmailInboxModal from './GmailInboxModal';
+import OutlookInboxModal from './OutlookInboxModal';
 import { api } from '../../api/client';
+import { useFocus } from '../../context/FocusContext';
 
 export default function TaskBuilder() {
     // 1. Task Details State
@@ -101,34 +102,70 @@ export default function TaskBuilder() {
     const [reminderType, setReminderType] = useState('Standard');
     const [reminderFreq, setReminderFreq] = useState('10 mins before');
     const [escalate, setEscalate] = useState(false);
+    const [reminderMsg, setReminderMsg] = useState('');
 
-    // 5. Focus Mode State
-    const [focusMode, setFocusMode] = useState(false);
+    // 5. Focus Mode State (shared globally so the "Feeling overwhelmed" actions can trigger it)
+    const { focusMode, setFocusMode } = useFocus();
+
+    // If the Summarizer sent action items here ("Convert all to tasks"), add them.
+    useEffect(() => {
+        const raw = localStorage.getItem('neurosync_pending_tasks');
+        if (!raw) return;
+        localStorage.removeItem('neurosync_pending_tasks');
+        let texts = [];
+        try { texts = JSON.parse(raw) || []; } catch { texts = []; }
+        if (!texts.length) return;
+        const incoming = texts.map((text, i) => ({
+            id: `pending_${Date.now()}_${i}`,
+            name: text,
+            description: '',
+            completed: false,
+            dueDate: 'Today',
+            relatedTo: 'From Summarizer',
+            assignee: { name: 'Me', avatar: `https://ui-avatars.com/api/?name=Me&background=random` },
+            tags: [{ label: 'email', type: 'category' }],
+            steps: [],
+        }));
+        setTasks(prev => [...incoming, ...prev]);
+    }, []);
 
     // --- Actions ---
 
-    const handleAddEmailAsTask = (email) => {
-        const newTask = {
-            id: Date.now().toString(),
-            name: `[Email] ${email.subject}`,
-            description: `From: ${email.sender}\n\n${email.body}`,
+    // Turn an Outlook email into a task, then let the AI break it into micro-steps.
+    const handleAddEmailAsTask = async (email) => {
+        setIsGmailModalOpen(false);
+
+        const tempId = Date.now().toString();
+        const rawText = `${email.subject}\n\nFrom: ${email.sender}\n\n${email.body}`;
+
+        const placeholder = {
+            id: tempId,
+            name: email.subject,
+            description: `From: ${email.sender}`,
             completed: false,
             dueDate: 'Today',
             relatedTo: email.sender,
-            assignee: { name: 'Me', avatar: 'https://ui-avatars.com/api/?name=Me' },
-            tags: [
-                { label: 'high', type: 'priority', icon: 'flag' },
-                { label: 'email', type: 'category' }
-            ],
-            steps: [
-                { id: Date.now().toString() + '_1', text: `Review email from ${email.sender}`, completed: false, estMinutes: 10 },
-                { id: Date.now().toString() + '_2', text: 'Formulate response points', completed: false, estMinutes: 15 },
-                { id: Date.now().toString() + '_3', text: 'Draft reply', completed: false, estMinutes: 20 },
-                { id: Date.now().toString() + '_4', text: 'Send and archive', completed: false, estMinutes: 5 },
-            ]
+            assignee: { name: 'Me', avatar: `https://ui-avatars.com/api/?name=Me&background=random` },
+            tags: [{ label: 'email', type: 'category' }],
+            steps: [],
         };
-        setTasks([newTask, ...tasks]);
-        setIsGmailModalOpen(false);
+        setTasks(prev => [placeholder, ...prev]);
+        setExpandedTaskId(tempId);
+        setAiLoading(tempId);
+
+        try {
+            const data = await api.createTask(rawText);
+            const steps = mapMicroSteps(data.microSteps);
+            setTasks(prev => prev.map(t =>
+                t.id === tempId
+                    ? { ...t, name: data.title || t.name, aiSummary: data.summary || '', aiError: null, steps }
+                    : t
+            ));
+        } catch (err) {
+            setTasks(prev => prev.map(t => t.id === tempId ? { ...t, aiError: err.message } : t));
+        } finally {
+            setAiLoading(null);
+        }
     };
 
     const handleCreateTask = () => {
@@ -309,8 +346,44 @@ export default function TaskBuilder() {
         Persistent: 'bg-red-50 text-red-600 border-red-200',
     };
 
+    // Schedule a real browser notification (works while the tab is open).
+    // A production build would use a service worker / server push instead.
+    const handleSetReminder = async () => {
+        if (!('Notification' in window)) {
+            setReminderMsg('This browser does not support notifications.');
+            return;
+        }
+        let permission = Notification.permission;
+        if (permission === 'default') permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            setReminderMsg('Please allow notifications so NeuroSync can nudge you.');
+            return;
+        }
+
+        const offsets = { 'At time of due date': 0, '10 mins before': 10, '30 mins before': 30, '1 hour before': 60, '1 day before': 1440 };
+        let fireAt;
+        if (dueDate) {
+            fireAt = new Date(dueDate).getTime() - (offsets[reminderFreq] ?? 0) * 60000;
+        } else {
+            fireAt = Date.now() + 10000; // no due date set → gentle demo nudge in ~10s
+        }
+        const delay = Math.max(0, fireAt - Date.now());
+        const requireInteraction = reminderType === 'Persistent';
+        window.setTimeout(() => {
+            try {
+                new Notification('NeuroSync', {
+                    body: 'Gentle nudge — a little progress on your task is enough 🌿',
+                    requireInteraction,
+                });
+            } catch { /* ignore */ }
+        }, delay);
+
+        const when = dueDate ? new Date(fireAt).toLocaleString() : 'in about 10 seconds';
+        setReminderMsg(`Reminder set — a ${reminderType.toLowerCase()} nudge will arrive ${when}.`);
+    };
+
     return (
-        <div className="max-w-[1400px] mx-auto space-y-6 pb-20 px-4 sm:px-6">
+        <div className="max-w-[1400px] mx-auto space-y-6 pb-20">
             {/* Header */}
 
 
@@ -366,9 +439,9 @@ export default function TaskBuilder() {
                             </li>
                         </ul>
 
-                        <div className="mb-4">
+                        <div>
                             <h4 className="flex items-center gap-2 text-[14px] font-bold text-gray-900 mb-2">
-                                <span className="w-2 h-2 rounded-full bg-green-500"></span> Work
+                                <span className="w-2 h-2 rounded-full bg-green-500"></span> Projects
                             </h4>
                             <ul className="space-y-2">
                                 <li className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-blue-600 bg-blue-50 cursor-pointer transition-colors">
@@ -376,43 +449,7 @@ export default function TaskBuilder() {
                                         <div className="w-[18px] h-[18px] rounded-full border-2 border-blue-600 flex items-center justify-center">
                                             <div className="w-[6px] h-[6px] rounded-full bg-blue-600"></div>
                                         </div>
-                                        <span>Design & Development</span>
-                                    </div>
-                                </li>
-                                <li className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-100 hover:border-gray-200 cursor-pointer transition-colors">
-                                    <div className="flex items-center gap-3 text-[14px] font-medium text-gray-700">
-                                        <div className="w-[18px] h-[18px] rounded-full border-[2px] border-black flex items-center justify-center"></div>
-                                        <span>Progress Check-in</span>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <h4 className="flex items-center gap-2 text-[14px] font-bold text-gray-900 mb-2 mt-6">
-                                <span className="w-2 h-2 rounded-full bg-red-500"></span> Personal
-                            </h4>
-                            <ul className="space-y-2">
-                                <li className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-100 hover:border-gray-200 cursor-pointer transition-colors">
-                                    <div className="flex items-center gap-3 text-[14px] font-medium text-gray-700">
-                                        <div className="w-[18px] h-[18px] rounded-full border-[2px] border-black flex items-center justify-center">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-black"></div>
-                                        </div>
-                                        <span>Shopping</span>
-                                    </div>
-                                </li>
-                                <li className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-100 hover:border-gray-200 cursor-pointer transition-colors">
-                                    <div className="flex items-center gap-3 text-[14px] font-medium text-gray-700">
-                                        <div className="w-[18px] h-[18px] rounded-full border-[2px] border-black flex items-center justify-center">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-black"></div>
-                                        </div>
-                                        <span>Traveling</span>
-                                    </div>
-                                </li>
-                                <li className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-100 hover:border-gray-200 cursor-pointer transition-colors">
-                                    <div className="flex items-center gap-3 text-[14px] font-medium text-gray-700">
-                                        <div className="w-[18px] h-[18px] rounded-full border-[2px] border-black flex items-center justify-center"></div>
-                                        <span>Sport</span>
+                                        <span>TechCorp account</span>
                                     </div>
                                 </li>
                             </ul>
@@ -430,14 +467,14 @@ export default function TaskBuilder() {
                                 <input
                                     type="text"
                                     placeholder="Enter task name..."
-                                    className="w-full text-xl font-bold border-none outline-none placeholder:text-gray-300 focus:ring-0 px-0 text-[var(--color-text-primary)]"
+                                    className="w-full text-xl font-bold bg-gray-50 rounded-lg px-3 py-2 border border-transparent outline-none placeholder:text-gray-300 focus:border-[var(--color-brand-start)] focus:ring-2 focus:ring-[var(--color-brand-start)]/20 text-[var(--color-text-primary)] transition-colors"
                                     value={taskName}
                                     onChange={(e) => setTaskName(e.target.value)}
                                 />
                             </div>
                             <div>
                                 <textarea
-                                    className="w-full min-h-[100px] text-[15px] resize-none border-none outline-none placeholder:text-gray-400 focus:ring-0 px-0 text-[var(--color-text-secondary)] leading-relaxed"
+                                    className="w-full min-h-[90px] text-[15px] resize-none bg-gray-50 rounded-lg px-3 py-2 border border-transparent outline-none placeholder:text-gray-400 focus:border-[var(--color-brand-start)] focus:ring-2 focus:ring-[var(--color-brand-start)]/20 text-[var(--color-text-secondary)] leading-relaxed transition-colors"
                                     placeholder="Task description (optional)..."
                                     value={taskDesc}
                                     onChange={(e) => setTaskDesc(e.target.value)}
@@ -875,6 +912,16 @@ export default function TaskBuilder() {
                                 </div>
                             </label>
 
+                            <button
+                                onClick={handleSetReminder}
+                                className="w-full py-2.5 rounded-lg bg-[var(--color-brand-start)] text-white text-[13px] font-medium hover:bg-[var(--color-brand-mid)] transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Bell size={14} /> Set reminder
+                            </button>
+                            {reminderMsg && (
+                                <p className="text-[11px] text-[var(--color-brand-end)] bg-[var(--color-success-bg)] rounded-lg p-2 leading-relaxed">{reminderMsg}</p>
+                            )}
+
                         </div>
                     </div>
 
@@ -882,7 +929,7 @@ export default function TaskBuilder() {
             </div>
 
             {/* Modals */}
-            <GmailInboxModal
+            <OutlookInboxModal
                 isOpen={isGmailModalOpen}
                 onClose={() => setIsGmailModalOpen(false)}
                 onAddTask={handleAddEmailAsTask}

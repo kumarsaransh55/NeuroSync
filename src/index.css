@@ -66,8 +66,13 @@
     filter: contrast(125%) saturate(110%);
   }
 
-  /* Basic Dark Mode shell (to be expanded) */
+  /* Dark mode: invert the whole UI, then re-invert raster media so photos and
+     avatars keep their true colours. (A bespoke dark palette is a future step.) */
   html.dark {
+    filter: invert(1) hue-rotate(180deg);
+  }
+  html.dark img,
+  html.dark video {
     filter: invert(1) hue-rotate(180deg);
   }
 }

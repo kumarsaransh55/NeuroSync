@@ -112,33 +112,22 @@ export default function InputWorkspace({ onAnalyzeComplete }) {
                 <UploadZone onFileSelect={handleFileSelect} />
             </div>
 
-            {/* AI Control Buttons */}
-            <div className="flex flex-wrap items-center gap-3">
+            {/* AI Control — a single analyze action (the backend does it all in one call) */}
+            <div className="flex flex-col gap-2">
                 <button
                     onClick={handleGenerateSummary}
                     disabled={!textContent.trim() || isAnalyzing}
-                    className="px-5 py-2.5 rounded-[var(--radius-btn)] bg-gradient-to-r from-[var(--color-brand-start)] to-[var(--color-brand-mid)] text-white font-medium text-[14px] hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-5 py-2.5 rounded-[var(--radius-btn)] bg-gradient-to-r from-[var(--color-brand-start)] to-[var(--color-brand-mid)] text-white font-medium text-[14px] hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
                     {analysisComplete ? (
-                        <><CheckCircle2 size={16} /> Summary Complete</>
+                        <><CheckCircle2 size={16} /> Analysis Complete</>
                     ) : (
-                        <><Sparkles size={16} /> Generate Summary</>
+                        <><Sparkles size={16} /> Analyze with NeuroSync</>
                     )}
                 </button>
-                <button
-                    onClick={handleGenerateSummary}
-                    disabled={!textContent.trim() || isAnalyzing}
-                    className="px-5 py-2.5 rounded-[var(--radius-btn)] bg-white border border-[var(--color-brand-start)] text-[var(--color-brand-start)] font-medium text-[14px] hover:bg-[#ECFDF5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    Simplify Language
-                </button>
-                <button
-                    onClick={handleGenerateSummary}
-                    disabled={!textContent.trim() || isAnalyzing}
-                    className="px-5 py-2.5 rounded-[var(--radius-btn)] bg-white border border-[var(--color-brand-start)] text-[var(--color-brand-start)] font-medium text-[14px] hover:bg-[#ECFDF5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    Extract Tasks
-                </button>
+                <p className="text-[12px] text-[var(--color-text-muted)] leading-relaxed">
+                    One click gives you the summary, action items, deadlines, hidden tasks, key points and a dyslexia-friendly rewrite. Use the <span className="font-medium">Simplify</span> / <span className="font-medium">Dyslexia</span> toggles above to change how the result reads.
+                </p>
             </div>
         </div>
     );

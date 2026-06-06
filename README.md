@@ -131,6 +131,6 @@ browser will be blocked by CORS / auth. See the API README → *Deploying to Azu
 - NeuroSync does **not** diagnose or store any "condition" — accessibility options are user-chosen preferences.
 
 ## Known limitations / roadmap
-- Gmail "Inbox" import is a UI mock (demonstrates the intended Outlook/Teams/Jira aggregation).
+- Outlook "Inbox" is a demo connector with representative emails — selecting one runs the **real** AI breakdown. Production would use the Microsoft Graph API (`GET /me/messages`); see `docs/SECURITY-AND-AI.md`.
 - Dashboard "Analytics"/"Team" routes are placeholders.
 - Settings persist locally (not yet synced to the backend `UserSettings` model).

@@ -2,9 +2,9 @@ import React from 'react';
 import { AlertCircle, ThumbsUp } from 'lucide-react';
 
 export default function ToneCard({ data }) {
-    if (!data) return null;
+    if (!data || !data.primary) return null;
 
-    const isUrgent = data.primary.toLowerCase() === 'urgent';
+    const isUrgent = /urgent|demanding|critical|angry|frustrat/i.test(data.primary);
     const bgColor = isUrgent ? 'bg-[#FEE2E2] border-[#FCA5A5]' : 'bg-blue-50 border-blue-200';
     const textColor = isUrgent ? 'text-[#991B1B]' : 'text-blue-700';
 
@@ -21,8 +21,8 @@ export default function ToneCard({ data }) {
             </div>
 
             <p className="text-[13px] text-[var(--color-text-secondary)] mt-4 leading-relaxed">
-                The sender emphasizes a <span className="font-semibold">{data.primary.toLowerCase()}</span> tone,
-                with underlying feelings of being <span className="font-medium text-gray-700">{data.secondary.toLowerCase()}</span>.
+                The message reads as <span className="font-semibold">{data.primary.toLowerCase()}</span>
+                {data.secondary ? <> — with an undertone of <span className="font-medium text-gray-700">{data.secondary.toLowerCase()}</span></> : null}.
             </p>
         </div>
     );

@@ -1,18 +1,23 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import BreathingGuide from './BreathingGuide';
 import QuickActionGrid from './QuickActionGrid';
 import BreathingAnimation from './BreathingAnimation';
+import { useFocus } from '../../../context/FocusContext';
 
-export default function OverwhelmedModal({ isOpen, onClose, setFocusMode }) {
+export default function OverwhelmedModal({ isOpen, onClose }) {
     const [isAnimating, setIsAnimating] = useState(false);
     const [showBreathing, setShowBreathing] = useState(false);
+    const { setFocusMode, startReset } = useFocus();
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (isOpen) {
             setIsAnimating(true);
             setShowBreathing(false); // Reset on open
         } else {
-            setTimeout(() => setIsAnimating(false), 250); // match fade out duration
+            const t = setTimeout(() => setIsAnimating(false), 250);
+            return () => clearTimeout(t);
         }
     }, [isOpen]);
 
@@ -28,16 +33,24 @@ export default function OverwhelmedModal({ isOpen, onClose, setFocusMode }) {
     if (!isOpen && !isAnimating) return null;
 
     const handleAction = (action) => {
-        console.log(`Action triggered: ${action}`);
-        if (action === 'focus') {
-            setFocusMode(true);
-            onClose();
-        } else if (action === 'breathe') {
+        if (action === 'breathe') {
             setShowBreathing(true);
-        } else {
-            // handle task or timer if needed
-            onClose();
+            return;
         }
+        if (action === 'focus' || action === 'task') {
+            // Enable focus mode and take the user to the Tasks page, where focus
+            // mode strips everything but the next step.
+            setFocusMode(true);
+            navigate('/dashboard/tasks');
+            onClose();
+            return;
+        }
+        if (action === 'timer') {
+            startReset(5);
+            onClose();
+            return;
+        }
+        onClose();
     };
 
     return (
@@ -50,19 +63,19 @@ export default function OverwhelmedModal({ isOpen, onClose, setFocusMode }) {
                 aria-hidden="true"
             ></div>
 
-            {/* Modal */}
+            {/* Modal — rounded corners stay consistent because the rounded
+                container clips its scrollable content (overflow-hidden). */}
             <div
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="overwhelmed-title"
-                className={`relative w-full sm:w-[90%] md:w-[480px] bg-white rounded-t-3xl sm:rounded-2xl p-6 sm:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.15)] mt-auto sm:mt-0 max-h-[90vh] transform transition-all duration-250 ease-out origin-bottom sm:origin-center
+                className={`relative w-full sm:w-[90%] md:w-[460px] bg-white rounded-t-3xl sm:rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.15)] mt-auto sm:mt-0 max-h-[90vh] overflow-hidden transform transition-all duration-250 ease-out origin-bottom sm:origin-center
                     ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-8 sm:translate-y-0'}`}
             >
-
-                {/* Close Button (Hidden on strict mobile, but good for accessibility) */}
+                {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    className="absolute top-3 right-3 z-10 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors"
                     aria-label="Close dialog"
                 >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -71,24 +84,26 @@ export default function OverwhelmedModal({ isOpen, onClose, setFocusMode }) {
                     </svg>
                 </button>
 
-                <div className="text-center mb-8">
-                    <div className="text-5xl mb-4 leading-none">🧘</div>
-                    <h2 id="overwhelmed-title" className="text-[22px] font-semibold text-[var(--color-text-primary)] tracking-tight">
-                        Take a short pause
-                    </h2>
-                    <p className="text-[14px] text-[var(--color-text-secondary)] mt-2">
-                        It's okay to feel overwhelmed.<br />Let's reset your mind for a moment.
-                    </p>
+                {/* Scrollable content */}
+                <div className="overflow-y-auto max-h-[90vh] p-5 sm:p-6">
+                    <div className="text-center mb-5">
+                        <div className="text-4xl mb-3 leading-none">🧘</div>
+                        <h2 id="overwhelmed-title" className="text-[20px] font-semibold text-[var(--color-text-primary)] tracking-tight">
+                            Take a short pause
+                        </h2>
+                        <p className="text-[14px] text-[var(--color-text-secondary)] mt-2">
+                            It's okay to feel overwhelmed.<br />Let's reset your mind for a moment.
+                        </p>
+                    </div>
+
+                    {showBreathing ? (
+                        <BreathingAnimation onComplete={() => setShowBreathing(false)} />
+                    ) : (
+                        <BreathingGuide />
+                    )}
+
+                    <QuickActionGrid onAction={handleAction} />
                 </div>
-
-                {showBreathing ? (
-                    <BreathingAnimation onComplete={() => setShowBreathing(false)} />
-                ) : (
-                    <BreathingGuide />
-                )}
-
-                <QuickActionGrid onAction={handleAction} />
-
             </div>
         </div>
     );

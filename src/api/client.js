@@ -6,12 +6,21 @@
 const API_BASE = (import.meta.env.VITE_API_BASE || 'https://neurosync.azurewebsites.net/api').replace(/\/+$/, '');
 
 const TOKEN_KEY = 'neurosync_jwt';
+const USER_KEY = 'neurosync_user';
 
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
 export const setToken = (token) => { if (token) localStorage.setItem(TOKEN_KEY, token); };
+
+// The signed-in user's display name + email, shown in the header.
+export const setUser = (user) => { if (user) localStorage.setItem(USER_KEY, JSON.stringify(user)); };
+export const getUser = () => {
+    try { return JSON.parse(localStorage.getItem(USER_KEY)) || null; } catch { return null; }
+};
+
 export const clearAuth = () => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem(USER_KEY);
 };
 
 export class ApiError extends Error {

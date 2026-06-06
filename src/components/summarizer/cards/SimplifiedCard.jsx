@@ -1,6 +1,8 @@
 import React from 'react';
 
-export default function SimplifiedCard({ simplifyMode }) {
+export default function SimplifiedCard({ simplifyMode, data }) {
+    const hasData = data && String(data).trim().length > 0;
+
     return (
         <div className="bg-[var(--color-card-bg)] rounded-[var(--radius-card)] shadow-[var(--shadow-card)] border border-[var(--color-border-color)] p-6">
             <div className="flex justify-between items-center mb-4">
@@ -12,17 +14,13 @@ export default function SimplifiedCard({ simplifyMode }) {
                 )}
             </div>
 
-            <div className={`text-[var(--color-text-secondary)] text-[15px] ${simplifyMode ? 'leading-loose space-y-4' : 'leading-relaxed space-y-2'}`}>
-                <p>
-                    Here is what we need to do for the Q3 project:
-                </p>
-                <ul className={`list-disc pl-5 ${simplifyMode ? 'space-y-4' : 'space-y-1'}`}>
-                    <li>Launch the first version of the dashboard by August 15th.</li>
-                    <li>Use the new Tailwind CSS designs.</li>
-                    <li>Make sure the website works on phones and tablets before building reports.</li>
-                    <li>Get approval from the finance team for the budget before the meeting on Friday.</li>
-                </ul>
-            </div>
+            {!hasData ? (
+                <p className="text-[14px] text-[var(--color-text-muted)] italic">Not available.</p>
+            ) : (
+                <div className={`text-[var(--color-text-secondary)] text-[15px] whitespace-pre-wrap ${simplifyMode ? 'leading-loose' : 'leading-relaxed'}`}>
+                    {data}
+                </div>
+            )}
         </div>
     );
 }

@@ -4,8 +4,8 @@ export default function OverwhelmedButton({ onClick }) {
     return (
         <button
             onClick={onClick}
-            className="group flex flex-row items-center gap-3 sm:gap-4 bg-gradient-to-r from-[#EEF2FD] via-white to-[#F9E8F3] 
-            px-3 sm:px-4 py-2 sm:py-2.5 rounded-[16px] shadow-[0_4px_16px_rgba(31,35,70,0.06)] border border-white/80
+            className="group flex flex-row items-center gap-2.5 bg-gradient-to-r from-[#EEF2FD] via-white to-[#F9E8F3]
+            px-3 py-1.5 rounded-[14px] shadow-[0_4px_16px_rgba(31,35,70,0.06)] border border-white/80
             hover:shadow-[0_6px_20px_rgba(31,35,70,0.08)] hover:-translate-y-0.5 transition-all duration-300
             text-left relative active:scale-[0.98] outline-none"
             aria-label="Feeling overwhelmed? Reset your focus"
@@ -14,7 +14,7 @@ export default function OverwhelmedButton({ onClick }) {
             <div className="absolute inset-0 rounded-[16px] shadow-[inset_0_0_12px_rgba(255,255,255,0.8)] pointer-events-none"></div>
 
             {/* Illustration SVG representation */}
-            <div className="shrink-0 flex items-center justify-center w-[45px] h-[45px] sm:w-[50px] sm:h-[50px] relative z-10 transition-transform duration-300 group-hover:scale-[1.03]">
+            <div className="shrink-0 flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 relative z-10 transition-transform duration-300 group-hover:scale-[1.03]">
                 <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-sm">
                     {/* Confused swirls */}
                     <path d="M 18 30 Q 12 20 25 15 M 10 40 Q 5 25 22 30" stroke="#1F2445" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />

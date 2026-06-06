@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, setToken } from '../../api/client';
+import { api, setToken, setUser } from '../../api/client';
 
 export default function LoginForm() {
     const [email, setEmail] = useState('');
@@ -25,6 +25,7 @@ export default function LoginForm() {
             // Backend returns the JWT in the body so this SPA can store it and
             // send it as an Authorization: Bearer header on later requests.
             if (data?.token) setToken(data.token);
+            setUser({ name: data?.userName || email.split('@')[0], email });
             localStorage.setItem('isAuthenticated', 'true');
             navigate('/dashboard');
         } catch (error) {

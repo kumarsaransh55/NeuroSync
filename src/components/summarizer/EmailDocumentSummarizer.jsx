@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import InputWorkspace from './InputWorkspace';
 import SummaryCard from './cards/SummaryCard';
 import ActionItemsCard from './cards/ActionItemsCard';
@@ -7,17 +8,26 @@ import ToneCard from './cards/ToneCard';
 import HighlightsCard from './cards/HighlightsCard';
 import SimplifiedCard from './cards/SimplifiedCard';
 import HiddenTasksCard from './cards/HiddenTasksCard';
-import { FileText, Sparkles } from 'lucide-react';
+import { FileText } from 'lucide-react';
 
 export default function EmailDocumentSummarizer() {
     const [simplifyMode, setSimplifyMode] = useState(false);
     const [dyslexiaMode, setDyslexiaMode] = useState(false);
-    
+
     // State to hold the result of the AI Analysis
     const [analysisResult, setAnalysisResult] = useState(null);
+    const navigate = useNavigate();
 
     const handleAnalysisComplete = (resultData) => {
         setAnalysisResult(resultData);
+    };
+
+    // "Convert All to Tasks" → hand the action items to the Task Planner.
+    const handleConvertAll = (items) => {
+        if (!items || items.length === 0) return;
+        const texts = items.map((i) => i.text).filter(Boolean);
+        localStorage.setItem('neurosync_pending_tasks', JSON.stringify(texts));
+        navigate('/dashboard/tasks');
     };
 
     return (
@@ -74,7 +84,7 @@ export default function EmailDocumentSummarizer() {
                     ) : (
                         <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
                             <SummaryCard data={analysisResult.summary} />
-                            <ActionItemsCard data={analysisResult.actionItems} />
+                            <ActionItemsCard data={analysisResult.actionItems} onConvertAll={handleConvertAll} />
                             <DeadlineCard data={analysisResult.deadlines} />
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

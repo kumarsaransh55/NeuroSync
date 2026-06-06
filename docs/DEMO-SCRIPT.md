@@ -57,6 +57,7 @@ let's aim to have the deck ready for review on Thursday. Appreciate it!
 
 ### Beat 3 — From understanding to doing (45s)
 - Go to **Task Planner** (`/dashboard/tasks`).
+- *(Optional, stronger):* click **Inbox → Outlook**, hover Rahul's email, and hit **Break into task** — pulls it straight from email, same AI breakdown, zero copy-paste.
 - Paste the email (or type "Prepare the TechCorp Q3 deck for Thursday review") into the task box.
 - Click **AI Break Into Steps**.
 - **While it loads:** "Understanding isn't the hard part for Aanya — *starting* is. So we turn it into action."

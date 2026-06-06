@@ -17,6 +17,7 @@ import RegisterPage from './components/auth/RegisterPage';
 import AuthRoute from './components/auth/AuthRoute';
 
 import { SettingsProvider } from './context/SettingsContext';
+import { FocusProvider, useFocus } from './context/FocusContext';
 
 function DashboardOverview() {
   const { focusMode } = useOutletContext() || { focusMode: false };
@@ -60,7 +61,7 @@ function DashboardOverview() {
 }
 
 function DashboardLayout() {
-  const [focusMode, setFocusMode] = useState(false);
+  const { focusMode, setFocusMode } = useFocus();
   const location = useLocation();
   const path = location.pathname;
 
@@ -117,6 +118,7 @@ function DashboardLayout() {
 function App() {
   return (
     <SettingsProvider>
+      <FocusProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -133,13 +135,12 @@ function App() {
             <Route path="tasks" element={<TaskBuilder />} />
             <Route path="summarizer" element={<EmailDocumentSummarizer />} />
             <Route path="settings" element={<SettingsPage />} />
-            <Route path="analytics" element={<DashboardOverview />} />
-            <Route path="team" element={<DashboardOverview />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
           <Route path="/" element={<Navigate to="/dashboard/tasks" replace />} />
         </Routes>
       </BrowserRouter>
+      </FocusProvider>
     </SettingsProvider>
   );
 }

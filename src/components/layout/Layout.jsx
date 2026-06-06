@@ -1,6 +1,7 @@
 import React from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import ResetTimerChip from './ResetTimerChip';
 
 export default function Layout({
     children,
@@ -24,13 +25,13 @@ export default function Layout({
             <div className="flex-1 flex flex-col min-w-0">
                 <Header focusMode={focusMode} setFocusMode={setFocusMode} />
 
-                <main id="main-content" tabIndex={-1} className="p-8 flex-1 overflow-x-hidden overflow-y-auto w-full">
+                <main id="main-content" tabIndex={-1} className="px-6 py-5 flex-1 overflow-x-hidden overflow-y-auto w-full">
                     <div className="max-w-[1600px] mx-auto w-full">
 
                         {/* Dashboard Title & Actions */}
-                        <div className="flex justify-between items-end mb-8">
+                        <div className="flex justify-between items-end mb-5">
                             <div>
-                                <h1 className="text-[28px] font-bold text-[var(--color-text-primary)] tracking-tight">{title}</h1>
+                                <h1 className="text-[22px] font-bold text-[var(--color-text-primary)] tracking-tight">{title}</h1>
                                 <p className="text-[14px] text-[var(--color-text-secondary)] mt-1">{description}</p>
                             </div>
 
@@ -58,6 +59,7 @@ export default function Layout({
                     </div>
                 </main>
             </div>
+            <ResetTimerChip />
         </div>
     );
 }
