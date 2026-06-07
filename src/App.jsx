@@ -18,6 +18,7 @@ import AuthRoute from './components/auth/AuthRoute';
 
 import { SettingsProvider } from './context/SettingsContext';
 import { FocusProvider, useFocus } from './context/FocusContext';
+import { TasksProvider } from './context/TasksContext';
 
 function DashboardOverview() {
   const { focusMode } = useOutletContext() || { focusMode: false };
@@ -119,6 +120,7 @@ function App() {
   return (
     <SettingsProvider>
       <FocusProvider>
+      <TasksProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -140,6 +142,7 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard/tasks" replace />} />
         </Routes>
       </BrowserRouter>
+      </TasksProvider>
       </FocusProvider>
     </SettingsProvider>
   );

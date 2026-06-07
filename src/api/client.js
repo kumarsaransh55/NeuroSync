@@ -88,6 +88,22 @@ export const api = {
     // text directly — JSON.stringify wraps it in quotes exactly as required.
     analyzeDocument: (text) =>
         request('/Summarizer/analyze', { method: 'POST', body: text }),
+
+    // --- Task persistence ---
+    getMyTasks: () => request('/Tasks/my-tasks'),
+    quickCreateTask: (title, description = '', dueDate = null) =>
+        request('/Tasks/quick', { method: 'POST', body: { title, description, dueDate } }),
+    breakdownTask: (rawText) =>
+        request('/Tasks/breakdown', { method: 'POST', body: { rawText } }),
+    updateTask: (id, payload) =>
+        request(`/Tasks/${id}`, { method: 'PUT', body: payload }),
+    deleteTask: (id) =>
+        request(`/Tasks/${id}`, { method: 'DELETE' }),
+
+    // --- Per-user settings persistence ---
+    getSettings: () => request('/UserSettings'),
+    saveSettings: (settings) =>
+        request('/UserSettings', { method: 'PUT', body: settings }),
 };
 
 export { API_BASE };

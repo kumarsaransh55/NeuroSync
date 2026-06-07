@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 
 export default function BreathingAnimation({ duration = 30, onComplete }) {
     const [phase, setPhase] = useState('Inhale');
+    // Start the circle small so the very first "Inhale" visibly expands,
+    // instead of mounting already-expanded (which is why it only animated on exhale).
+    const [primed, setPrimed] = useState(false);
     const [secondsLeft, setSecondsLeft] = useState(duration);
 
     useEffect(() => {
@@ -9,16 +12,16 @@ export default function BreathingAnimation({ duration = 30, onComplete }) {
             onComplete();
             return;
         }
-
         const timer = setInterval(() => {
             setSecondsLeft(prev => prev - 1);
         }, 1000);
-
         return () => clearInterval(timer);
     }, [secondsLeft, onComplete]);
 
     useEffect(() => {
         let cycleTimeout;
+        // Paint small first, then prime + start so the first inhale animates outward.
+        const primeTimeout = setTimeout(() => setPrimed(true), 80);
 
         const runCycle = () => {
             setPhase('Inhale');
@@ -30,14 +33,18 @@ export default function BreathingAnimation({ duration = 30, onComplete }) {
                 }, 4000); // Hold for 4s
             }, 4000); // Inhale for 4s
         };
+        const startTimeout = setTimeout(runCycle, 100);
 
-        runCycle();
-
-        return () => clearTimeout(cycleTimeout);
+        return () => {
+            clearTimeout(primeTimeout);
+            clearTimeout(startTimeout);
+            clearTimeout(cycleTimeout);
+        };
     }, []);
 
     // Determine scale for animation
     const getScaleClass = () => {
+        if (!primed) return 'scale-100 transition-transform duration-[4000ms] ease-in-out';
         switch (phase) {
             case 'Inhale': return 'scale-150 transition-transform duration-[4000ms] ease-in-out';
             case 'Hold': return 'scale-150 transition-none';

@@ -2,6 +2,7 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import ResetTimerChip from './ResetTimerChip';
+import ReminderToast from './ReminderToast';
 
 export default function Layout({
     children,
@@ -60,6 +61,7 @@ export default function Layout({
                 </main>
             </div>
             <ResetTimerChip />
+            <ReminderToast />
         </div>
     );
 }

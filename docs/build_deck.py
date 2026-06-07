@@ -101,6 +101,32 @@ def style_cell(cell, text, size=13.5, color=INK, bold=False, bg=None, align=PP_A
     tf = cell.text_frame; tf.word_wrap = True
     para(first(tf), text, size, color, bold=bold, align=align, after=0)
 
+def run(p, text, size, color, bold=False, italic=False, font=FONT, superscript=False, link=None):
+    r = p.add_run()
+    r.text = text
+    r.font.size = Pt(size); r.font.bold = bold; r.font.italic = italic
+    r.font.color.rgb = color; r.font.name = font
+    if superscript:
+        r.font._rPr.set('baseline', '30000')  # superscript
+    if link:
+        r.hyperlink.address = link
+    return r
+
+# Canonical, numbered source list — used for the superscript fact-links AND the
+# Sources slide, so the numbers match.
+SOURCES = [
+    (1, "Accenture — 'Getting to Equal: The Disability Inclusion Advantage' (2018)", "https://www.accenture.com/_acnmedia/pdf-89/accenture-disability-inclusion-research-report.pdf"),
+    (2, "Accenture / Disability:IN / AAPD — 'The Disability Inclusion Imperative' (2023)", "https://newsroom.accenture.com/news/2023/companies-that-lead-in-disability-inclusion-outperform-peers-financially-reveals-new-research-from-accenture"),
+    (3, "Government of India — Rights of Persons with Disabilities Act, 2016", "https://legislative.gov.in/sites/default/files/A2016-49.pdf"),
+    (4, "nasscom — 'Neurodiversity and the Future of Work in India'", "https://community.nasscom.in/communities/neurodiversity/neurodiversity-and-future-work-india"),
+    (5, "HRKatha — 'The 85% invisibility: Why India's neurodiverse talent stays hidden' (2024-25)", "https://www.hrkatha.com/features/research/the-85-invisibility-why-indias-neurodiverse-talent-stays-hidden/"),
+    (6, "Frontiers in Psychology (2025) — universal support for neurodivergent employees", "https://www.frontiersin.org/journals/psychology/articles/10.3389/fpsyg.2025.1547877/full"),
+    (7, "Branicki et al. — Human Resource Management, Wiley (2024)", "https://onlinelibrary.wiley.com/doi/10.1002/hrm.22243"),
+    (8, "mydisabilityjobs.com — 'Neurodiversity in the Workplace | Statistics' (2025)", "https://mydisabilityjobs.com/statistics/neurodiversity-in-the-workplace/"),
+    (9, "Disability:IN — evidence-based neuroinclusion framework", "https://disabilityin.org/articles-and-updates/disability-in-unveils-innovative-evidence-based-framework-to-advance-neuroinclusion-in-the-workforce"),
+]
+SRC_URL = {n: u for (n, _, u) in SOURCES}
+
 # =====================================================================
 # Slide 1 — Title
 # =====================================================================
@@ -161,15 +187,17 @@ pagenum(s)
 s = add_slide()
 heading(s, "Who it's for — and why it matters", "A specific audience, a connected problem")
 stats = [
-    ("15–20%", "of people are neurodivergent (ADHD, autism, dyslexia, dyspraxia)"),
-    ("~1 in 2", "people with ADHD also have dyslexia — so it's ONE connected problem, not two"),
-    ("+28% / 2x / +30%", "revenue / net income / profit margin for disability-inclusion leaders"),
+    ("15–20%", "of people are neurodivergent (ADHD, autism, dyslexia, dyspraxia)", 8),
+    ("~1 in 2", "people with ADHD also have dyslexia — so it's ONE connected problem, not two", 8),
+    ("+28% / 2x / +30%", "revenue / net income / profit margin for disability-inclusion leaders", 1),
 ]
 x = 0.75
-for big, label in stats:
+for big, label, ref in stats:
     rect(s, x, 2.1, 3.78, 2.5, CARDBG)
     tf = box(s, x + 0.25, 2.35, 3.3, 2.1)
-    para(first(tf), big, 30, GREEN_DARK, bold=True, after=8)
+    p = first(tf)
+    para(p, big, 30, GREEN_DARK, bold=True, after=8)
+    run(p, " " + str(ref), 13, ACCENT, bold=True, superscript=True, link=SRC_URL[ref])  # clickable footnote -> source
     para(tf.add_paragraph(), label, 14, INK, after=0)
     x += 3.95
 tf = box(s, 0.75, 4.95, 11.9, 1.4)
@@ -344,21 +372,11 @@ pagenum(s)
 # =====================================================================
 s = add_slide()
 heading(s, "Credibility", "Sources & references")
-refs = [
-    "Accenture — 'Getting to Equal: The Disability Inclusion Advantage' (2018). newsroom.accenture.com; accenture.com/_acnmedia/pdf-89/accenture-disability-inclusion-research-report.pdf",
-    "Accenture / Disability:IN / AAPD — 'The Disability Inclusion Imperative' (2023). newsroom.accenture.com",
-    "Government of India — Rights of Persons with Disabilities Act, 2016 (recognises ASD, dyslexia, ADHD).",
-    "nasscom — 'Neurodiversity and the Future of Work in India'. community.nasscom.in",
-    "HRKatha — 'The 85% invisibility: Why India's neurodiverse talent stays hidden' (2024-25).",
-    "Frontiers in Psychology (2025) — universal support for neurodivergent employees.",
-    "Branicki et al. — Human Resource Management, Wiley (2024): flexible/home working & neurodivergent outcomes.",
-    "mydisabilityjobs.com — 'Neurodiversity in the Workplace | Statistics' (2025).",
-    "Disability:IN — evidence-based neuroinclusion framework.",
-]
 tf = box(s, 0.75, 1.95, 11.9, 4.7)
-for i, r in enumerate(refs):
+for i, (num, label, url) in enumerate(SOURCES):
     p = first(tf) if i == 0 else tf.add_paragraph()
-    para(p, str(i + 1) + ".  " + r, 12, INK, after=6)
+    para(p, f"{num}.  {label} — ", 12, INK, after=6)
+    run(p, url, 10.5, ACCENT, link=url)  # clickable
 tf2 = box(s, 0.75, 6.55, 11.9, 0.5)
 para(first(tf2), "Tier-1 sources (Accenture / industry bodies / peer-reviewed) are prioritised; verify exact figures against primary sources before the final.",
      10.5, GRAY, italic=True, after=0)

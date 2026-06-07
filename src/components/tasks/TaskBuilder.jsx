@@ -7,6 +7,8 @@ import {
 import OutlookInboxModal from './OutlookInboxModal';
 import { api } from '../../api/client';
 import { useFocus } from '../../context/FocusContext';
+import { useTasks } from '../../context/TasksContext';
+import { scheduleReminder, ensureNotificationPermission } from '../../lib/reminders';
 
 export default function TaskBuilder() {
     // 1. Task Details State
@@ -17,78 +19,7 @@ export default function TaskBuilder() {
     const [isGmailModalOpen, setIsGmailModalOpen] = useState(false);
 
     // 2. Tasks State
-    const [tasks, setTasks] = useState([
-        {
-            id: 't1',
-            name: 'Follow-up call with TechCorp',
-            description: 'Discuss contract terms and pricing',
-            completed: false,
-            dueDate: 'Nov 12, 2024',
-            relatedTo: 'TechCorp Industries',
-            assignee: { name: 'Sarah Chen', avatar: 'https://i.pravatar.cc/150?img=5' },
-            tags: [
-                { label: 'high', type: 'priority', icon: 'flag' },
-                { label: 'call', type: 'category' }
-            ],
-            steps: []
-        },
-        {
-            id: 't2',
-            name: 'Send proposal to Global Solutions',
-            description: 'Include pricing and implementation timeline',
-            completed: false,
-            dueDate: 'Nov 13, 2024',
-            relatedTo: 'Global Solutions',
-            assignee: { name: 'Michael Ross', avatar: 'https://i.pravatar.cc/150?img=11' },
-            tags: [
-                { label: 'high', type: 'priority', icon: 'flag' },
-                { label: 'email', type: 'category' }
-            ],
-            steps: []
-        },
-        {
-            id: 't3',
-            name: 'Product demo for StartupHub',
-            description: 'Showcase new features and integrations',
-            completed: false,
-            dueDate: 'Nov 14, 2024',
-            relatedTo: 'StartupHub',
-            assignee: { name: 'Emily Davis', avatar: 'https://i.pravatar.cc/150?img=4' },
-            tags: [
-                { label: 'medium', type: 'priority', icon: 'flag' },
-                { label: 'meeting', type: 'category' }
-            ],
-            steps: []
-        },
-        {
-            id: 't4',
-            name: 'Contract review with legal',
-            description: 'Review and approve Enterprise Systems contract',
-            completed: false,
-            dueDate: 'Nov 15, 2024',
-            relatedTo: 'Enterprise Systems',
-            assignee: { name: 'James Wilson', avatar: 'https://i.pravatar.cc/150?img=12' },
-            tags: [
-                { label: 'medium', type: 'priority', icon: 'flag' },
-                { label: 'call', type: 'category' }
-            ],
-            steps: []
-        },
-        {
-            id: 't5',
-            name: 'Follow-up email to Innovate Corp',
-            description: 'Check status of proposal submission',
-            completed: true,
-            dueDate: 'Nov 11, 2024',
-            relatedTo: 'Innovate Corp',
-            assignee: { name: 'Michael Ross', avatar: 'https://i.pravatar.cc/150?img=11' },
-            tags: [
-                { label: 'high', type: 'priority', icon: 'flag' },
-                { label: 'follow-up', type: 'category' }
-            ],
-            steps: []
-        }
-    ]);
+    const { tasks, setTasks } = useTasks();
 
     const [expandedTaskId, setExpandedTaskId] = useState(null);
     const [draggedStepId, setDraggedStepId] = useState(null);
@@ -127,6 +58,13 @@ export default function TaskBuilder() {
             steps: [],
         }));
         setTasks(prev => [...incoming, ...prev]);
+        // Persist each to the DB (best-effort) and link the dbId so future edits sync.
+        incoming.forEach(async (task) => {
+            try {
+                const saved = await api.quickCreateTask(task.name, '');
+                if (saved?.id) setTasks(prev => prev.map(t => t.id === task.id ? { ...t, dbId: saved.id } : t));
+            } catch { /* backend not reachable — kept locally */ }
+        });
     }, []);
 
     // --- Actions ---
@@ -158,7 +96,7 @@ export default function TaskBuilder() {
             const steps = mapMicroSteps(data.microSteps);
             setTasks(prev => prev.map(t =>
                 t.id === tempId
-                    ? { ...t, name: data.title || t.name, aiSummary: data.summary || '', aiError: null, steps }
+                    ? { ...t, dbId: data.id ?? t.dbId, name: data.title || t.name, aiSummary: data.summary || '', aiError: null, steps }
                     : t
             ));
         } catch (err) {
@@ -168,12 +106,14 @@ export default function TaskBuilder() {
         }
     };
 
-    const handleCreateTask = () => {
-        if (!taskName) return;
+    const handleCreateTask = async () => {
+        if (!taskName.trim()) return;
+        const tempId = Date.now().toString();
+        const nm = taskName, ds = taskDesc;
         const newTask = {
-            id: Date.now().toString(),
-            name: taskName,
-            description: taskDesc,
+            id: tempId,
+            name: nm,
+            description: ds,
             completed: false,
             dueDate: 'Today',
             relatedTo: 'General',
@@ -181,9 +121,14 @@ export default function TaskBuilder() {
             tags: [],
             steps: []
         };
-        setTasks([newTask, ...tasks]);
+        setTasks(prev => [newTask, ...prev]);
         setTaskName('');
         setTaskDesc('');
+        // Best-effort: persist to the DB so it survives across devices/logins.
+        try {
+            const saved = await api.quickCreateTask(nm, ds);
+            if (saved?.id) setTasks(prev => prev.map(t => t.id === tempId ? { ...t, dbId: saved.id } : t));
+        } catch { /* backend not reachable — kept locally */ }
     }
 
 
@@ -230,7 +175,7 @@ export default function TaskBuilder() {
             const steps = mapMicroSteps(data.microSteps);
             setTasks(prev => prev.map(t =>
                 t.id === tempId
-                    ? { ...t, name: data.title || t.name, aiSummary: data.summary || '', aiError: null, steps }
+                    ? { ...t, dbId: data.id ?? t.dbId, name: data.title || t.name, aiSummary: data.summary || '', aiError: null, steps }
                     : t
             ));
         } catch (err) {
@@ -249,13 +194,21 @@ export default function TaskBuilder() {
         setAiLoading(taskId);
 
         try {
-            const data = await api.createTask(rawText);
-            const steps = mapMicroSteps(data.microSteps);
-            setTasks(prev => prev.map(t =>
-                t.id === taskId
-                    ? { ...t, aiSummary: data.summary || t.aiSummary, aiError: null, steps }
-                    : t
-            ));
+            if (task.dbId) {
+                // Already saved — break down only, then the debounced sync updates the SAME row (no duplicate).
+                const data = await api.breakdownTask(rawText);
+                const steps = mapMicroSteps(data.steps);
+                setTasks(prev => prev.map(t =>
+                    t.id === taskId ? { ...t, aiSummary: data.taskSummary || t.aiSummary, aiError: null, steps } : t
+                ));
+            } else {
+                // Not yet persisted — create + persist with its steps.
+                const data = await api.createTask(rawText);
+                const steps = mapMicroSteps(data.microSteps);
+                setTasks(prev => prev.map(t =>
+                    t.id === taskId ? { ...t, dbId: data.id ?? t.dbId, aiSummary: data.summary || t.aiSummary, aiError: null, steps } : t
+                ));
+            }
         } catch (err) {
             setTasks(prev => prev.map(t => t.id === taskId ? { ...t, aiError: err.message } : t));
         } finally {
@@ -327,6 +280,14 @@ export default function TaskBuilder() {
         setDraggedStepId(null);
     };
 
+    // Due date is per-task: it applies to the currently open task and is saved to the DB.
+    const handleDueDateChange = (value) => {
+        setDueDate(value);
+        if (!expandedTaskId) return;
+        const display = value ? new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Today';
+        setTasks(prev => prev.map(t => t.id === expandedTaskId ? { ...t, dueDateISO: value, dueDate: display } : t));
+    };
+
     // Computations
     const activeTask = tasks.find(t => t.id === expandedTaskId);
     const totalEstMinutes = activeTask ? activeTask.steps.reduce((acc, step) => acc + step.estMinutes, 0) : 0;
@@ -349,41 +310,35 @@ export default function TaskBuilder() {
     // Schedule a real browser notification (works while the tab is open).
     // A production build would use a service worker / server push instead.
     const handleSetReminder = async () => {
-        if (!('Notification' in window)) {
-            setReminderMsg('This browser does not support notifications.');
-            return;
-        }
-        let permission = Notification.permission;
-        if (permission === 'default') permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-            setReminderMsg('Please allow notifications so NeuroSync can nudge you.');
-            return;
-        }
+        // Best-effort OS permission; the in-app toast fires regardless.
+        const perm = await ensureNotificationPermission();
 
         const offsets = { 'At time of due date': 0, '10 mins before': 10, '30 mins before': 30, '1 hour before': 60, '1 day before': 1440 };
+        const at = tasks.find(t => t.id === expandedTaskId);
+        const dueIso = at?.dueDateISO || dueDate;
         let fireAt;
-        if (dueDate) {
-            fireAt = new Date(dueDate).getTime() - (offsets[reminderFreq] ?? 0) * 60000;
+        if (dueIso) {
+            fireAt = new Date(dueIso).getTime() - (offsets[reminderFreq] ?? 0) * 60000;
         } else {
             fireAt = Date.now() + 10000; // no due date set → gentle demo nudge in ~10s
         }
-        const delay = Math.max(0, fireAt - Date.now());
-        const requireInteraction = reminderType === 'Persistent';
-        window.setTimeout(() => {
-            try {
-                new Notification('NeuroSync', {
-                    body: 'Gentle nudge — a little progress on your task is enough 🌿',
-                    requireInteraction,
-                });
-            } catch { /* ignore */ }
-        }, delay);
+        let delay = fireAt - Date.now();
+        if (delay < 0) delay = 1000; // time already passed → nudge shortly so it isn't lost
 
-        const when = dueDate ? new Date(fireAt).toLocaleString() : 'in about 10 seconds';
-        setReminderMsg(`Reminder set — a ${reminderType.toLowerCase()} nudge will arrive ${when}.`);
+        scheduleReminder({
+            delayMs: delay,
+            message: 'Gentle nudge — a little progress on your task is enough 🌿',
+            style: reminderType,
+        });
+
+        const future = (fireAt - Date.now()) > 0;
+        const whenText = (dueIso && future) ? new Date(fireAt).toLocaleString() : `in about ${Math.round(delay / 1000)} seconds`;
+        const permNote = perm === 'granted' ? '' : ' — shown in-app (allow notifications for system alerts too)';
+        setReminderMsg(`Reminder set — a ${reminderType.toLowerCase()} nudge will arrive ${whenText}${permNote}.`);
     };
 
     return (
-        <div className="max-w-[1400px] mx-auto space-y-6 pb-20">
+        <div className="space-y-6 pb-20">
             {/* Header */}
 
 
@@ -522,7 +477,7 @@ export default function TaskBuilder() {
                                 </div>
                             )}
 
-                            {tasks.slice(0, 3).map((task) => {
+                            {tasks.map((task) => {
                                 const isExpanded = expandedTaskId === task.id;
                                 const completedStepsCount = task.steps.filter(s => s.completed).length;
                                 const progressPercent = task.steps.length > 0 ? Math.round((completedStepsCount / task.steps.length) * 100) : 0;
@@ -833,11 +788,14 @@ export default function TaskBuilder() {
                                 <div className="relative">
                                     <input
                                         type="datetime-local"
-                                        value={dueDate}
-                                        onChange={(e) => setDueDate(e.target.value)}
+                                        value={activeTask ? (activeTask.dueDateISO || '') : dueDate}
+                                        onChange={(e) => handleDueDateChange(e.target.value)}
                                         className="w-full text-[13px] border border-gray-200 rounded-lg pl-3 pr-3 py-2 outline-none focus:border-[var(--color-brand-start)] focus:ring-1 focus:ring-[var(--color-brand-start)] transition-colors"
                                     />
                                 </div>
+                                {!expandedTaskId && (
+                                    <p className="text-[11px] text-gray-400 mt-1">Open a task to set its due date.</p>
+                                )}
                             </div>
                         </div>
                     </div>
