@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Mail, Plus, RefreshCw, AlertTriangle } from 'lucide-react';
-import { isOutlookConfigured, fetchOutlookMessages } from '../../services/outlook';
+import { isOutlookConfigured, isOutlookSignedIn, fetchOutlookMessages, connectOutlook, disconnectOutlook } from '../../services/outlook';
 
 // Representative messages used when a Microsoft 365 app registration isn't
 // configured yet (see docs/OUTLOOK-INTEGRATION.md). The Q3 email matches the
@@ -35,22 +35,48 @@ export default function OutlookInboxModal({ isOpen, onClose, onAddTask }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    if (!isOpen) return null;
-
     const configured = isOutlookConfigured();
 
-    const connect = async () => {
+    const loadMail = async () => {
         setLoading(true);
         setError('');
         try {
             const msgs = await fetchOutlookMessages(8);
+            if (msgs === null) return; // redirecting to Microsoft to sign in
             setEmails(msgs.length ? msgs : DEMO_EMAILS);
             setConnected(true);
         } catch (e) {
-            setError(e.message || 'Could not connect to Outlook.');
+            setError(e.message || 'Could not load Outlook mail.');
         } finally {
             setLoading(false);
         }
+    };
+
+    // Auto-load when opened if already signed in (e.g. after the redirect returns).
+    useEffect(() => {
+        if (isOpen && configured && isOutlookSignedIn()) {
+            loadMail();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    const signedIn = configured && isOutlookSignedIn();
+
+    const handleConnectClick = () => {
+        if (signedIn) {
+            loadMail();
+        } else {
+            connectOutlook(); // full-page redirect to Microsoft, returns to the app
+        }
+    };
+
+    const handleDisconnect = async () => {
+        await disconnectOutlook();
+        setEmails(DEMO_EMAILS);
+        setConnected(false);
+        setError('');
     };
 
     return (
@@ -71,12 +97,20 @@ export default function OutlookInboxModal({ isOpen, onClose, onAddTask }) {
                     <div className="flex items-center gap-2">
                         {configured && (
                             <button
-                                onClick={connect}
+                                onClick={handleConnectClick}
                                 disabled={loading}
                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0F6CBD] hover:bg-[#0c5aa0] text-white text-[12px] font-medium rounded-lg transition-colors disabled:opacity-60"
                             >
                                 <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-                                {loading ? 'Connecting…' : connected ? 'Refresh' : 'Connect Outlook'}
+                                {loading ? 'Loading…' : signedIn ? 'Refresh' : 'Connect Outlook'}
+                            </button>
+                        )}
+                        {signedIn && (
+                            <button
+                                onClick={handleDisconnect}
+                                className="px-3 py-1.5 text-[12px] font-medium text-gray-600 hover:text-red-600 border border-gray-200 rounded-lg hover:border-red-200 transition-colors"
+                            >
+                                Disconnect
                             </button>
                         )}
                         <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1" aria-label="Close Outlook inbox">
@@ -124,7 +158,7 @@ export default function OutlookInboxModal({ isOpen, onClose, onAddTask }) {
                 {/* Footer */}
                 <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-between items-center text-xs text-gray-500">
                     <span>{connected ? 'Connected to Outlook (Microsoft Graph)' : 'Connected as aanya.sharma@accenture.com'}</span>
-                    <span className="text-[#0F6CBD]">{configured ? (connected ? 'Live' : 'Click Connect to load your inbox') : 'Microsoft 365 (demo)'}</span>
+                    <span className="text-[#0F6CBD]">{configured ? (signedIn ? 'Live' : 'Click Connect to sign in') : 'Microsoft 365 (demo)'}</span>
                 </div>
 
             </div>

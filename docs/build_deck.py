@@ -218,7 +218,7 @@ tf = box(s, 0.75, 1.85, 11.9, 0.7)
 para(first(tf), "An inclusive work companion that turns the chaos of workplace communication into "
      "clarity and momentum — adapted to how each person's brain works.", 16, INK, after=0)
 usps = [
-    ("1  Adaptive output", "\"Same message, rendered for your brain.\" The same email becomes time-boxed steps (ADHD) or short, plain, dyslexia-friendly text — Copilot gives everyone the identical summary."),
+    ("1  Adaptive output", "\"Same message, rendered for your brain.\" A one-time profile you set makes the same email become time-boxed steps (ADHD) or short, plain, dyslexia-friendly text. Copilot gives everyone the identical answer — we adapt to the person."),
     ("2  Understanding -> doing", "\"From 'I get it' to 'I started.'\" We attack task initiation and overwhelm, not just comprehension: micro-steps, focus mode, a one-tap reset."),
     ("3  Inclusion-first & enterprise-native", "\"Built for your brain AND your firewall.\" Calm, sensory-aware by default, running on enterprise data behind governance — not a public chatbot."),
 ]
@@ -238,15 +238,15 @@ pagenum(s)
 s = add_slide()
 heading(s, "See it work", "Live demo — real AI, in seconds")
 bullets(s, [
-    "Paste Aanya's messy email — or pull it straight from Outlook (Microsoft Graph).",
-    "NeuroSync returns a plain summary, the real action items, and the hidden Thursday deadline.",
-    "Toggle Dyslexia mode — the same content, re-rendered for a dyslexic reader.",
-    "Send it to the Planner — AI breaks it into ordered micro-steps with time estimates.",
+    "Open the profile — NeuroSync already knows Aanya prefers short text and small steps.",
+    "Paste her messy email (or pull it from Outlook) → summary, real action items, the hidden Thursday deadline.",
+    "The dyslexia-friendly rewrite is short + bulleted — rendered to HER profile, not a generic answer.",
+    "Convert to tasks → one task with AI-described micro-steps and time estimates.",
     "Focus Mode strips everything but the next step. 'Feeling overwhelmed?' gives a calm reset.",
 ], t=2.0, gap=12)
 band = rect(s, 0.75, 5.95, 11.8, 0.85, CARDBG)
 tf = box(s, 1.05, 6.08, 11.2, 0.65)
-para(first(tf), "Running live on real AI (Google Gemini today; Azure OpenAI in production).",
+para(first(tf), "Running live on Azure OpenAI (in your tenant) — and personalised to each user.",
      15, GREEN_DARK, bold=True, after=0)
 notes(s, "Switch to the running app and follow DEMO-SCRIPT.md. Keep the backup recording ready. End: 'same email — now understood, broken down, started, and she never had to mask or ask for help.'")
 pagenum(s)
@@ -298,7 +298,7 @@ pagenum(s)
 s = add_slide()
 heading(s, "Feasibility & security", "Real today — and enterprise-ready")
 bullets(s, [
-    "Working MVP: React frontend + ASP.NET Core API + SQL on Azure, with real AI (Google Gemini).",
+    "Working MVP on Azure: React + ASP.NET Core + SQL + Azure OpenAI — Tasks, Projects, the Summarizer, and per-user personalization are all live.",
     "Real Outlook integration via Microsoft Graph (email -> AI-broken-down task).",
     "Security: in production the AI runs on Azure OpenAI inside our tenant — client data never leaves Accenture's compliance boundary; self-hosted open models for the most sensitive data.",
     "The AI sits behind an interface, so switching providers is a config change, not a rewrite.",
@@ -339,8 +339,8 @@ pagenum(s)
 s = add_slide()
 heading(s, "What's next", "From prototype to pilot")
 cols = [
-    ("NOW — working", ["AI task breakdown", "Plain-language summarizer", "Outlook email -> task", "Focus mode + overwhelm reset"]),
-    ("NEXT — 1-3 months", ["Validated pilot with a neurodiversity ERG", "Azure OpenAI in-tenant", "Teams & Jira connectors"]),
+    ("NOW — working", ["AI task breakdown + summarizer", "Per-user personalization", "Projects + due dates", "Outlook email -> task", "Azure OpenAI in-tenant"]),
+    ("NEXT — 1-3 months", ["Validated pilot with a neurodiversity ERG", "Teams & Jira connectors", "More language / low-vision profiles"]),
     ("LATER — scale", ["More language profiles", "Low-vision / screen-reader modes", "Manager insights (privacy-safe)"]),
 ]
 x = 0.75

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 
-export default function ActionItemsCard({ data = [], onConvertAll }) {
+export default function ActionItemsCard({ data = [], onConvertAll, converting = false }) {
     const [tasks, setTasks] = useState(data);
 
     useEffect(() => {
@@ -54,10 +54,11 @@ export default function ActionItemsCard({ data = [], onConvertAll }) {
 
                     <button
                         onClick={() => onConvertAll?.(tasks.filter(t => !t.checked))}
-                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-[var(--color-border-color)] bg-gray-50 text-[14px] font-medium text-[var(--color-text-secondary)] hover:bg-white hover:border-[var(--color-accent)] hover:text-[var(--color-brand-end)] transition-all"
+                        disabled={converting}
+                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-[var(--color-border-color)] bg-gray-50 text-[14px] font-medium text-[var(--color-text-secondary)] hover:bg-white hover:border-[var(--color-accent)] hover:text-[var(--color-brand-end)] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                         <Plus size={16} />
-                        Convert All to Tasks
+                        {converting ? 'Creating task…' : 'Convert All to Tasks'}
                     </button>
                 </>
             )}

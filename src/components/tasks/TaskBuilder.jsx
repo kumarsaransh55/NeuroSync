@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Sparkles, Mail, GripVertical, CheckCircle2, Circle,
     Clock, Calendar, Bell, ShieldAlert, Play, Target, Plus,
-    MoreVertical, ChevronDown, Inbox, Star, History, Trash, Briefcase, User
+    MoreVertical, ChevronDown, Inbox, Star, History, Trash, Pencil, Briefcase, User
 } from 'lucide-react';
 import OutlookInboxModal from './OutlookInboxModal';
 import { api } from '../../api/client';
@@ -19,7 +19,7 @@ export default function TaskBuilder() {
     const [isGmailModalOpen, setIsGmailModalOpen] = useState(false);
 
     // 2. Tasks State
-    const { tasks, setTasks } = useTasks();
+    const { tasks, setTasks, removeTask, projects, currentProjectId, setCurrentProjectId, addProject, renameProject, deleteProject } = useTasks();
 
     const [expandedTaskId, setExpandedTaskId] = useState(null);
     const [draggedStepId, setDraggedStepId] = useState(null);
@@ -34,9 +34,12 @@ export default function TaskBuilder() {
     const [reminderFreq, setReminderFreq] = useState('10 mins before');
     const [escalate, setEscalate] = useState(false);
     const [reminderMsg, setReminderMsg] = useState('');
+    const [newProjectName, setNewProjectName] = useState('');
+    const [editingProjectId, setEditingProjectId] = useState(null);
+    const [editingProjectName, setEditingProjectName] = useState('');
 
     // 5. Focus Mode State (shared globally so the "Feeling overwhelmed" actions can trigger it)
-    const { focusMode, setFocusMode } = useFocus();
+    const { focusMode, startFocus, stopFocus } = useFocus();
 
     // If the Summarizer sent action items here ("Convert all to tasks"), add them.
     useEffect(() => {
@@ -46,6 +49,11 @@ export default function TaskBuilder() {
         let texts = [];
         try { texts = JSON.parse(raw) || []; } catch { texts = []; }
         if (!texts.length) return;
+        const pendingProject = localStorage.getItem('neurosync_pending_project');
+        localStorage.removeItem('neurosync_pending_project');
+        // Summarizer items arrive grouped as their own new project.
+        const project = pendingProject ? addProject(pendingProject) : null;
+        const pid = project ? project.id : currentProjectId;
         const incoming = texts.map((text, i) => ({
             id: `pending_${Date.now()}_${i}`,
             name: text,
@@ -53,11 +61,13 @@ export default function TaskBuilder() {
             completed: false,
             dueDate: 'Today',
             relatedTo: 'From Summarizer',
+            projectId: pid,
             assignee: { name: 'Me', avatar: `https://ui-avatars.com/api/?name=Me&background=random` },
             tags: [{ label: 'email', type: 'category' }],
             steps: [],
         }));
         setTasks(prev => [...incoming, ...prev]);
+        if (project) setCurrentProjectId(project.id);
         // Persist each to the DB (best-effort) and link the dbId so future edits sync.
         incoming.forEach(async (task) => {
             try {
@@ -117,6 +127,7 @@ export default function TaskBuilder() {
             completed: false,
             dueDate: 'Today',
             relatedTo: 'General',
+            projectId: currentProjectId,
             assignee: { name: 'Me', avatar: `https://ui-avatars.com/api/?name=Me&background=random` },
             tags: [],
             steps: []
@@ -160,6 +171,7 @@ export default function TaskBuilder() {
             completed: false,
             dueDate: 'Today',
             relatedTo: 'General',
+            projectId: currentProjectId,
             assignee: { name: 'Me', avatar: `https://ui-avatars.com/api/?name=Me&background=random` },
             tags: [],
             steps: [],
@@ -192,6 +204,8 @@ export default function TaskBuilder() {
 
         const rawText = task.description?.trim() ? `${task.name}\n\n${task.description}` : task.name;
         setAiLoading(taskId);
+        // Clear any previous error so a successful retry doesn't keep showing red.
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, aiError: null } : t));
 
         try {
             if (task.dbId) {
@@ -226,9 +240,13 @@ export default function TaskBuilder() {
     }
 
     const handleStepToggle = (taskId, stepId) => {
-        setTasks(tasks.map(t => {
+        setTasks(prev => prev.map(t => {
             if (t.id === taskId) {
-                return { ...t, steps: t.steps.map(s => s.id === stepId ? { ...s, completed: !s.completed } : s) };
+                const steps = t.steps.map(s => s.id === stepId ? { ...s, completed: !s.completed } : s);
+                // Keep the parent task in sync with its subtasks: all done → the
+                // task is complete (heading strikes off); otherwise it isn't.
+                const allDone = steps.length > 0 && steps.every(s => s.completed);
+                return { ...t, steps, completed: allDone };
             }
             return t;
         }));
@@ -291,6 +309,17 @@ export default function TaskBuilder() {
     // Computations
     const activeTask = tasks.find(t => t.id === expandedTaskId);
     const totalEstMinutes = activeTask ? activeTask.steps.reduce((acc, step) => acc + step.estMinutes, 0) : 0;
+
+    // Filter the task list by the selected project (null = all tasks).
+    const visibleTasks = currentProjectId ? tasks.filter(t => t.projectId === currentProjectId) : tasks;
+
+    const handleAddProject = () => {
+        const name = newProjectName.trim();
+        if (!name) return;
+        const p = addProject(name);
+        setNewProjectName('');
+        setCurrentProjectId(p.id);
+    };
 
     // Format minutes to hrs/mins
     const formatTime = (mins) => {
@@ -398,16 +427,75 @@ export default function TaskBuilder() {
                             <h4 className="flex items-center gap-2 text-[14px] font-bold text-gray-900 mb-2">
                                 <span className="w-2 h-2 rounded-full bg-green-500"></span> Projects
                             </h4>
-                            <ul className="space-y-2">
-                                <li className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-blue-600 bg-blue-50 cursor-pointer transition-colors">
-                                    <div className="flex items-center gap-3 text-[14px] font-medium text-blue-700">
-                                        <div className="w-[18px] h-[18px] rounded-full border-2 border-blue-600 flex items-center justify-center">
-                                            <div className="w-[6px] h-[6px] rounded-full bg-blue-600"></div>
-                                        </div>
-                                        <span>TechCorp account</span>
-                                    </div>
+                            <ul className="space-y-1.5">
+                                <li>
+                                    <button
+                                        onClick={() => setCurrentProjectId(null)}
+                                        className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors ${!currentProjectId ? 'bg-[var(--color-success-bg)] text-[var(--color-brand-end)]' : 'text-gray-600 hover:bg-gray-50'}`}
+                                    >
+                                        <Inbox size={15} /> All tasks
+                                    </button>
                                 </li>
+                                {projects.map((p) => (
+                                    <li key={p.id} className="group flex items-center">
+                                        {editingProjectId === p.id ? (
+                                            <input
+                                                autoFocus
+                                                value={editingProjectName}
+                                                onChange={(e) => setEditingProjectName(e.target.value)}
+                                                onBlur={() => { renameProject(p.id, editingProjectName.trim() || p.name); setEditingProjectId(null); }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') { renameProject(p.id, editingProjectName.trim() || p.name); setEditingProjectId(null); }
+                                                    if (e.key === 'Escape') setEditingProjectId(null);
+                                                }}
+                                                className="flex-1 min-w-0 text-[13px] border border-[var(--color-brand-start)] rounded-lg px-2 py-1.5 outline-none"
+                                            />
+                                        ) : (
+                                            <>
+                                                <button
+                                                    onClick={() => setCurrentProjectId(p.id)}
+                                                    className={`flex-1 min-w-0 text-left flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors ${currentProjectId === p.id ? 'bg-[var(--color-success-bg)] text-[var(--color-brand-end)]' : 'text-gray-600 hover:bg-gray-50'}`}
+                                                >
+                                                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: p.color }}></span>
+                                                    <span className="truncate">{p.name}</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => { setEditingProjectId(p.id); setEditingProjectName(p.name); }}
+                                                    className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-[var(--color-brand-start)] p-1 transition-all shrink-0"
+                                                    aria-label={`Rename project ${p.name}`}
+                                                    title="Rename project"
+                                                >
+                                                    <Pencil size={13} />
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteProject(p.id)}
+                                                    className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 p-1 transition-all shrink-0"
+                                                    aria-label={`Delete project ${p.name}`}
+                                                    title="Delete project"
+                                                >
+                                                    <Trash size={13} />
+                                                </button>
+                                            </>
+                                        )}
+                                    </li>
+                                ))}
                             </ul>
+                            <div className="flex items-center gap-1.5 mt-2">
+                                <input
+                                    value={newProjectName}
+                                    onChange={(e) => setNewProjectName(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddProject(); }}
+                                    placeholder="New project..."
+                                    className="flex-1 min-w-0 text-[12px] border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-[var(--color-brand-start)]"
+                                />
+                                <button
+                                    onClick={handleAddProject}
+                                    className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-[var(--color-brand-start)] text-white hover:bg-[var(--color-brand-mid)]"
+                                    aria-label="Add project"
+                                >
+                                    <Plus size={14} />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -471,13 +559,13 @@ export default function TaskBuilder() {
 
                         {/* List of Tasks */}
                         <div className="space-y-4">
-                            {tasks.length === 0 && (
+                            {visibleTasks.length === 0 && (
                                 <div className="text-center py-8 text-gray-400 text-sm border-2 border-dashed border-gray-100 rounded-lg">
                                     No tasks yet. Create one above.
                                 </div>
                             )}
 
-                            {tasks.map((task) => {
+                            {visibleTasks.map((task) => {
                                 const isExpanded = expandedTaskId === task.id;
                                 const completedStepsCount = task.steps.filter(s => s.completed).length;
                                 const progressPercent = task.steps.length > 0 ? Math.round((completedStepsCount / task.steps.length) * 100) : 0;
@@ -525,6 +613,15 @@ export default function TaskBuilder() {
                                                         <Calendar size={14} className="text-gray-400" />
                                                         {task.dueDate}
                                                     </div>
+                                                    <select
+                                                        value={task.projectId || ''}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        onChange={(e) => { e.stopPropagation(); const pid = e.target.value || null; setTasks(prev => prev.map(t => t.id === task.id ? { ...t, projectId: pid } : t)); }}
+                                                        className="text-[12px] border border-gray-200 rounded-md px-2 py-0.5 bg-white text-gray-600 outline-none focus:border-[var(--color-brand-start)] max-w-[150px]"
+                                                    >
+                                                        <option value="">No project</option>
+                                                        {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                                    </select>
                                                     {task.relatedTo && (
                                                         <div className="flex items-center gap-1.5 text-[12px] font-medium text-amber-600">
                                                             <span className="text-gray-400">Related to:</span> {task.relatedTo}
@@ -571,6 +668,16 @@ export default function TaskBuilder() {
                                                     )
                                                 })}
                                             </div>
+
+                                            {/* Delete task */}
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); removeTask(task.id); }}
+                                                className="flex-shrink-0 mt-1 text-gray-300 hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-50"
+                                                aria-label={`Delete task ${task.name}`}
+                                                title="Delete task"
+                                            >
+                                                <Trash size={16} />
+                                            </button>
                                         </div>
 
                                         {/* Expanded Subtasks Area */}
@@ -741,7 +848,7 @@ export default function TaskBuilder() {
                     {/* 5. Start Task Button (Focus Mode) */}
                     <div className="bg-white rounded-[var(--radius-card)] p-1 shadow-[var(--shadow-card)] overflow-hidden">
                         <button
-                            onClick={() => setFocusMode(!focusMode)}
+                            onClick={() => focusMode ? stopFocus() : startFocus(expandedTaskId || visibleTasks.find(t => !t.completed)?.id || null)}
                             className={`w-full py-4 px-6 rounded-xl font-bold text-[16px] transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl
                                 ${focusMode
                                     ? 'bg-amber-500 text-white hover:bg-amber-600'

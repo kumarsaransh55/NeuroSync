@@ -9,19 +9,19 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-6 md:p-8 space-y-12">
+        <div className="max-w-4xl mx-auto px-6 md:px-8 pt-1 pb-8 space-y-6">
             <div>
                 <h1 className="text-[28px] font-bold text-[var(--color-text-primary)] mb-2">Settings</h1>
                 <p className="text-[15px] text-[var(--color-text-muted)]">Manage your preferences and interface options across NeuroSync.</p>
             </div>
 
             {/* Accessibility */}
-            <section className="bg-white rounded-[20px] p-6 sm:p-8 shadow-sm border border-[var(--color-border-color)]">
-                <h2 className="text-[20px] font-semibold text-[var(--color-text-primary)] mb-6 pb-4 border-b border-[var(--color-border-color)] flex items-center gap-2">
+            <section className="bg-white rounded-[20px] p-5 sm:p-6 shadow-sm border border-[var(--color-border-color)]">
+                <h2 className="text-[20px] font-semibold text-[var(--color-text-primary)] mb-4 pb-3 border-b border-[var(--color-border-color)] flex items-center gap-2">
                     <span className="text-[var(--color-brand-start)] text-[22px]">👁</span> Accessibility
                 </h2>
 
-                <div className="space-y-6">
+                <div className="space-y-5">
                     {/* Font Size */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
@@ -96,13 +96,91 @@ export default function SettingsPage() {
                 </div>
             </section>
 
+            {/* Personalization */}
+            <section className="bg-white rounded-[20px] p-5 sm:p-6 shadow-sm border border-[var(--color-border-color)]">
+                <h2 className="text-[20px] font-semibold text-[var(--color-text-primary)] mb-2 flex items-center gap-2">
+                    <span className="text-[var(--color-brand-start)] text-[22px]">🧠</span> Personalization
+                </h2>
+                <p className="text-sm text-[var(--color-text-muted)] mb-4 pb-3 border-b border-[var(--color-border-color)]">These shape how the AI writes for you and how it reminds you — no labels, no diagnosis.</p>
+
+                <div className="space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 className="font-medium text-[var(--color-text-primary)] mb-1">Simpler language</h3>
+                            <p className="text-sm text-[var(--color-text-muted)]">Shorter sentences, plainer words, more bullet points.</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" className="sr-only peer" checked={settings.simpleLanguage} onChange={(e) => handleSettingChange('profile', 'simpleLanguage', e.target.checked)} />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-brand-start)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-brand-start)]"></div>
+                        </label>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 className="font-medium text-[var(--color-text-primary)] mb-1">Break tasks into</h3>
+                            <p className="text-sm text-[var(--color-text-muted)]">How granular the AI's micro-steps are.</p>
+                        </div>
+                        <select value={settings.stepSize} onChange={(e) => handleSettingChange('profile', 'stepSize', e.target.value)} className="bg-gray-50 border border-gray-200 text-[var(--color-text-primary)] rounded-[12px] focus:ring-[var(--color-brand-start)] focus:border-[var(--color-brand-start)] block w-full sm:w-auto p-2.5">
+                            <option value="small">Lots of small steps</option>
+                            <option value="medium">No preference</option>
+                            <option value="large">A few bigger steps</option>
+                        </select>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 className="font-medium text-[var(--color-text-primary)] mb-1">One thing at a time</h3>
+                            <p className="text-sm text-[var(--color-text-muted)]">Each step is a single, clear action.</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" className="sr-only peer" checked={settings.oneThingAtATime} onChange={(e) => handleSettingChange('profile', 'oneThingAtATime', e.target.checked)} />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-brand-start)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-brand-start)]"></div>
+                        </label>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 className="font-medium text-[var(--color-text-primary)] mb-1">Show time estimates</h3>
+                            <p className="text-sm text-[var(--color-text-muted)]">Add a realistic time to each step.</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" className="sr-only peer" checked={settings.showTimeEstimates} onChange={(e) => handleSettingChange('profile', 'showTimeEstimates', e.target.checked)} />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-brand-start)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-brand-start)]"></div>
+                        </label>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 className="font-medium text-[var(--color-text-primary)] mb-1">Reminder style</h3>
+                            <p className="text-sm text-[var(--color-text-muted)]">How firm reminders should feel.</p>
+                        </div>
+                        <select value={settings.reminderStyle} onChange={(e) => handleSettingChange('profile', 'reminderStyle', e.target.value)} className="bg-gray-50 border border-gray-200 text-[var(--color-text-primary)] rounded-[12px] focus:ring-[var(--color-brand-start)] focus:border-[var(--color-brand-start)] block w-full sm:w-auto p-2.5">
+                            <option value="gentle">Gentle</option>
+                            <option value="standard">Standard</option>
+                            <option value="minimal">Minimal</option>
+                        </select>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 className="font-medium text-[var(--color-text-primary)] mb-1">Reduce motion</h3>
+                            <p className="text-sm text-[var(--color-text-muted)]">Minimise animations across the app.</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" className="sr-only peer" checked={settings.reducedMotion} onChange={(e) => handleSettingChange('profile', 'reducedMotion', e.target.checked)} />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-brand-start)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-brand-start)]"></div>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
             {/* Notifications */}
-            <section className="bg-white rounded-[20px] p-6 sm:p-8 shadow-sm border border-[var(--color-border-color)]">
-                <h2 className="text-[20px] font-semibold text-[var(--color-text-primary)] mb-6 pb-4 border-b border-[var(--color-border-color)] flex items-center gap-2">
+            <section className="bg-white rounded-[20px] p-5 sm:p-6 shadow-sm border border-[var(--color-border-color)]">
+                <h2 className="text-[20px] font-semibold text-[var(--color-text-primary)] mb-4 pb-3 border-b border-[var(--color-border-color)] flex items-center gap-2">
                     <span className="text-[var(--color-brand-start)] text-[22px]">🔔</span> Notifications
                 </h2>
 
-                <div className="space-y-6">
+                <div className="space-y-5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
                             <h3 className="font-medium text-[var(--color-text-primary)] mb-1">Reminder Type</h3>
@@ -155,12 +233,12 @@ export default function SettingsPage() {
             </section>
 
             {/* Focus Mode */}
-            <section className="bg-white rounded-[20px] p-6 sm:p-8 shadow-sm border border-[var(--color-border-color)]">
-                <h2 className="text-[20px] font-semibold text-[var(--color-text-primary)] mb-6 pb-4 border-b border-[var(--color-border-color)] flex items-center gap-2">
+            <section className="bg-white rounded-[20px] p-5 sm:p-6 shadow-sm border border-[var(--color-border-color)]">
+                <h2 className="text-[20px] font-semibold text-[var(--color-text-primary)] mb-4 pb-3 border-b border-[var(--color-border-color)] flex items-center gap-2">
                     <span className="text-[var(--color-brand-start)] text-[22px]">🎯</span> Focus Mode
                 </h2>
 
-                <div className="space-y-6">
+                <div className="space-y-5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
                             <h3 className="font-medium text-[var(--color-text-primary)] mb-1">Timer Length (Minutes)</h3>
@@ -208,12 +286,12 @@ export default function SettingsPage() {
             </section>
 
             {/* AI Preferences */}
-            <section className="bg-white rounded-[20px] p-6 sm:p-8 shadow-sm border border-[var(--color-border-color)]">
-                <h2 className="text-[20px] font-semibold text-[var(--color-text-primary)] mb-6 pb-4 border-b border-[var(--color-border-color)] flex items-center gap-2">
+            <section className="bg-white rounded-[20px] p-5 sm:p-6 shadow-sm border border-[var(--color-border-color)]">
+                <h2 className="text-[20px] font-semibold text-[var(--color-text-primary)] mb-4 pb-3 border-b border-[var(--color-border-color)] flex items-center gap-2">
                     <span className="text-[var(--color-brand-start)] text-[22px]">✨</span> AI Preferences
                 </h2>
 
-                <div className="space-y-6">
+                <div className="space-y-5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
                             <h3 className="font-medium text-[var(--color-text-primary)] mb-1">AI Suggestion Level</h3>

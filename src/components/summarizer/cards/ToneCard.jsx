@@ -9,7 +9,7 @@ export default function ToneCard({ data }) {
     const textColor = isUrgent ? 'text-[#991B1B]' : 'text-blue-700';
 
     return (
-        <div className="bg-[var(--color-card-bg)] rounded-[var(--radius-card)] shadow-[var(--shadow-card)] border border-[var(--color-border-color)] p-6 flex flex-col justify-center">
+        <div className="bg-[var(--color-card-bg)] rounded-[var(--radius-card)] shadow-[var(--shadow-card)] border border-[var(--color-border-color)] p-6">
             <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-3">Tone Analysis</h3>
 
             <div className="flex items-center gap-3">

@@ -6,6 +6,8 @@
 > many — even **5 conversations** changes your story from *"we assume"* to
 > *"users told us."*
 
+> **Now live in the product:** NeuroSync includes an opt-in personalization questionnaire (no diagnosis). Its preferences — simpler language, smaller steps, gentler reminders — are exactly what to validate here. Use interviews to confirm these help and to discover new ones.
+
 ---
 
 ## Ground rules (this community is sensitive — read first)
@@ -56,14 +58,15 @@ Keep it conversational. **Ask, then listen** — don't pitch your idea early, an
 > Probes: "Can you give an example?" · "What did that feel like?" · "What did you do next?"
 
 ### C. React to the concept (3 min) — *only now show it*
-Show one screenshot (or the live app): an email → summary + action items + hidden deadline, and the dyslexia-friendly rewrite.
+Show the live app: an email → summary + action items + hidden deadline + dyslexia-friendly rewrite. Then show the **personalization** — that the same email can be rendered for *their* preferences (shorter text / smaller steps).
 7. "What's your honest first reaction?"
 8. "Which part — if any — would actually help on a Monday? Which wouldn't?"
-9. "What would make you hesitant to use this at work?" *(listen for stigma/privacy)*
-10. "If you had a magic wand for your inbox, what would it do?"
+9. "Would having the output adapt to how *you* read and work (shorter text, smaller steps) make a difference?" *(this validates the core USP)*
+10. "What would make you hesitant to use this at work?" *(listen for stigma/privacy)*
+11. "If you had a magic wand for your inbox, what would it do?"
 
 ### D. Close (30s)
-11. "Anything we didn't ask that we should have?" Thank them; offer to share what you learn.
+12. "Anything we didn't ask that we should have?" Thank them; offer to share what you learn.
 
 ### Don'ts
 - ❌ Don't ask "Would you use this?" (everyone says yes). Ask about *past behaviour* instead.

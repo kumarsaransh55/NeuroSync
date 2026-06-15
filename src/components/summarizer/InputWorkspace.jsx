@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import UploadZone from './UploadZone';
 import { Loader2, Sparkles, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { api } from '../../api/client';
+import { extractTextFromFile } from '../../lib/extractText';
 
 // Map the backend DocumentAnalysisResult into the shape the result cards expect.
 const mapAnalysis = (d = {}) => {
@@ -26,30 +27,37 @@ const mapAnalysis = (d = {}) => {
 };
 
 export default function InputWorkspace({ onAnalyzeComplete }) {
-    const [textContent, setTextContent] = useState('');
+    // Restore the last input so leaving the page and coming back (e.g. after a
+    // Settings change) keeps it — the user can just hit Analyze again.
+    const [textContent, setTextContent] = useState(() => localStorage.getItem('ns_summarizer_input') || '');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analyzingStatus, setAnalyzingStatus] = useState('');
     const [analysisComplete, setAnalysisComplete] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
 
-    const handleFileSelect = (file) => {
+    // Keep the saved input in sync so it survives navigation / reload.
+    useEffect(() => {
+        try { localStorage.setItem('ns_summarizer_input', textContent); } catch { /* ignore */ }
+    }, [textContent]);
+
+    const handleFileSelect = async (file) => {
         if (!file) return;
         setErrorMsg('');
         setIsAnalyzing(true);
         setAnalyzingStatus(`Reading ${file.name}...`);
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            setTextContent(String(e.target?.result || ''));
-            setIsAnalyzing(false);
-            setAnalyzingStatus('');
-        };
-        reader.onerror = () => {
+        try {
+            const text = await extractTextFromFile(file);
+            if (!text) {
+                setErrorMsg('Could not find readable text in that file. Try a PDF, DOCX, or TXT — or paste the text directly.');
+            } else {
+                setTextContent(text);
+            }
+        } catch {
             setErrorMsg('Could not read that file. Please paste the text instead.');
+        } finally {
             setIsAnalyzing(false);
             setAnalyzingStatus('');
-        };
-        reader.readAsText(file);
+        }
     };
 
     const handleGenerateSummary = async () => {
@@ -62,7 +70,7 @@ export default function InputWorkspace({ onAnalyzeComplete }) {
 
         try {
             const data = await api.analyzeDocument(textContent);
-            if (onAnalyzeComplete) onAnalyzeComplete(mapAnalysis(data));
+            if (onAnalyzeComplete) onAnalyzeComplete({ ...mapAnalysis(data), sourceText: textContent });
             setAnalysisComplete(true);
             setTimeout(() => setAnalysisComplete(false), 3000);
         } catch (error) {

@@ -35,6 +35,24 @@ export default function LoginForm() {
         }
     };
 
+    // Frictionless demo access: spin up an isolated guest session (no signup) and
+    // go straight into the app, AI features included.
+    const handleGuest = async () => {
+        setIsLoading(true);
+        setErrorMsg('');
+        try {
+            const data = await api.loginGuest();
+            if (data?.token) setToken(data.token);
+            setUser({ name: data?.userName || 'Guest', email: 'guest@neurosync.app' });
+            localStorage.setItem('isAuthenticated', 'true');
+            navigate('/dashboard');
+        } catch (error) {
+            setErrorMsg(error.message || 'Could not start a guest session. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="w-full">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -93,6 +111,16 @@ export default function LoginForm() {
                     )}
                 </button>
             </form>
+
+            <button
+                type="button"
+                onClick={handleGuest}
+                disabled={isLoading}
+                className="w-full h-[44px] mt-3 bg-white border border-[#166534] text-[#166534] rounded-xl font-semibold text-[14px] hover:bg-[#F0FDF4] transition-colors flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+                Continue as guest
+            </button>
+            <p className="text-center text-[12px] text-gray-400 mt-2">Explore the full app — no signup needed.</p>
 
             <div className="text-center mt-6 mb-2">
                 <span className="text-[14px] text-gray-600">Don't have an account? </span>

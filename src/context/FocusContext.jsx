@@ -12,8 +12,22 @@ export const useFocus = () => {
 // actions can drive focus mode on the Tasks page and start a visible countdown.
 export const FocusProvider = ({ children }) => {
     const [focusMode, setFocusMode] = useState(false);
+    // The task a focus session is running on (drives the FocusSession overlay).
+    const [focusTaskId, setFocusTaskId] = useState(null);
     const [resetEndsAt, setResetEndsAt] = useState(null);
     const timerRef = useRef(null);
+
+    // Enter a focus session for a specific task (from the dashboard or Tasks page).
+    const startFocus = useCallback((taskId = null) => {
+        setFocusTaskId(taskId);
+        setFocusMode(true);
+    }, []);
+
+    // Leave the focus session.
+    const stopFocus = useCallback(() => {
+        setFocusMode(false);
+        setFocusTaskId(null);
+    }, []);
 
     const cancelReset = useCallback(() => {
         if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
@@ -42,7 +56,7 @@ export const FocusProvider = ({ children }) => {
     useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
     return (
-        <FocusContext.Provider value={{ focusMode, setFocusMode, resetEndsAt, startReset, cancelReset }}>
+        <FocusContext.Provider value={{ focusMode, setFocusMode, focusTaskId, startFocus, stopFocus, resetEndsAt, startReset, cancelReset }}>
             {children}
         </FocusContext.Provider>
     );

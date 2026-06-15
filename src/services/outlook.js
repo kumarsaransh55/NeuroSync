@@ -1,23 +1,22 @@
 // Real Outlook integration via Microsoft Graph + MSAL (browser).
 //
-// This is genuine integration — it performs a real OAuth sign-in and calls the
-// Microsoft Graph API. It only activates when you provide an Azure AD (Entra)
-// app registration via env vars (see .env.example and docs/OUTLOOK-INTEGRATION.md):
-//   VITE_MS_CLIENT_ID  — the app registration's Application (client) ID
-//   VITE_MS_TENANT     — your tenant ID, or "organizations" / "common"
-//
-// If no client ID is configured, the inbox falls back to representative demo
-// emails so the email→task flow can still be demonstrated.
+// Uses the REDIRECT flow (not popups): the whole tab navigates to Microsoft and
+// back. This avoids the popup failures caused by Microsoft's Cross-Origin-Opener
+// -Policy headers and background-tab timer throttling, which made loginPopup
+// time out. Activates when an app registration is configured via env vars
+// (see .env.example and docs/OUTLOOK-INTEGRATION.md):
+//   VITE_MS_CLIENT_ID  — Application (client) ID
+//   VITE_MS_TENANT     — "common" (personal + work) or a tenant ID
 import { PublicClientApplication } from '@azure/msal-browser';
 
-const clientId = import.meta.env.VITE_MS_CLIENT_ID;
-const tenant = import.meta.env.VITE_MS_TENANT || 'common';
-const SCOPES = ['Mail.Read'];
+const clientId = (import.meta.env.VITE_MS_CLIENT_ID || '').trim();
+const tenant = (import.meta.env.VITE_MS_TENANT || 'common').trim() || 'common';
+const SCOPES = ['User.Read', 'Mail.Read'];
 
 export const isOutlookConfigured = () => Boolean(clientId);
 
 let msalInstance = null;
-let initialized = false;
+let initPromise = null;
 
 function getInstance() {
     if (!clientId) throw new Error('Outlook is not configured (set VITE_MS_CLIENT_ID).');
@@ -26,7 +25,7 @@ function getInstance() {
             auth: {
                 clientId,
                 authority: `https://login.microsoftonline.com/${tenant}`,
-                redirectUri: window.location.origin,
+                redirectUri: window.location.origin, // redirect flow returns to the app root
             },
             cache: { cacheLocation: 'localStorage' },
         });
@@ -34,30 +33,70 @@ function getInstance() {
     return msalInstance;
 }
 
+// Call once on app startup (before rendering) so a redirect response is processed
+// before React Router can strip the auth hash from the URL.
+export async function initOutlook() {
+    if (!clientId) return null;
+    const pca = getInstance();
+    if (!initPromise) {
+        initPromise = pca.initialize().then(() => pca.handleRedirectPromise());
+    }
+    let result = null;
+    try {
+        result = await initPromise;
+    } catch {
+        result = null;
+    }
+    if (result?.account) pca.setActiveAccount(result.account);
+    return result;
+}
+
+export function isOutlookSignedIn() {
+    if (!clientId || !msalInstance) return false;
+    return Boolean(msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0]);
+}
+
+// Start sign-in: full-page redirect to Microsoft, then back to the app.
+export async function connectOutlook() {
+    const pca = getInstance();
+    await initOutlook();
+    await pca.loginRedirect({ scopes: SCOPES });
+}
+
 async function getToken() {
     const pca = getInstance();
-    if (!initialized) {
-        await pca.initialize();
-        initialized = true;
-    }
-    let account = pca.getActiveAccount() || pca.getAllAccounts()[0];
+    await initOutlook();
+    const account = pca.getActiveAccount() || pca.getAllAccounts()[0];
     if (!account) {
-        const result = await pca.loginPopup({ scopes: SCOPES });
-        account = result.account;
-        pca.setActiveAccount(account);
+        await pca.loginRedirect({ scopes: SCOPES });
+        return null; // navigating away to sign in
     }
     try {
-        const result = await pca.acquireTokenSilent({ scopes: SCOPES, account });
-        return result.accessToken;
+        const res = await pca.acquireTokenSilent({ scopes: SCOPES, account });
+        return res.accessToken;
     } catch {
-        const result = await pca.acquireTokenPopup({ scopes: SCOPES });
-        return result.accessToken;
+        // Silent renewal failed (token expired, third-party cookies blocked, etc.)
+        // — fall back to a full-page redirect re-auth instead of throwing a timeout.
+        await pca.acquireTokenRedirect({ scopes: SCOPES, account });
+        return null;
     }
 }
 
-// Fetch recent messages and map them to the shape OutlookInboxModal expects.
+// Sign out of Outlook locally so the user can connect a fresh account.
+export async function disconnectOutlook() {
+    if (!msalInstance) return;
+    try {
+        const account = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+        await msalInstance.clearCache(account ? { account } : {});
+    } catch { /* ignore */ }
+    try { msalInstance.setActiveAccount(null); } catch { /* ignore */ }
+}
+
+// Fetch recent messages mapped to the inbox shape. Returns null if a sign-in
+// redirect is in progress (the page is navigating away).
 export async function fetchOutlookMessages(top = 8) {
     const token = await getToken();
+    if (!token) return null;
     const url = `https://graph.microsoft.com/v1.0/me/messages?$top=${top}&$select=subject,bodyPreview,from,receivedDateTime`;
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) throw new Error(`Microsoft Graph request failed (${res.status}).`);

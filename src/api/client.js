@@ -80,14 +80,27 @@ export const api = {
     register: (email, fullName, password) =>
         request('/Auth/register', { method: 'POST', body: { email, fullName, password }, auth: false }),
 
+    // Start an isolated guest session (no signup) — returns a real token so the
+    // AI features work. Used by "Continue as guest" on the login page.
+    loginGuest: () =>
+        request('/Auth/guest', { method: 'POST', auth: false }),
+
     // Breaks a raw task / pasted text into AI-generated micro-steps.
     createTask: (rawText) =>
         request('/Tasks/create-task', { method: 'POST', body: { rawText } }),
+    createTaskFromActions: (rawText, actionItems, projectId = null) =>
+        request('/Tasks/from-actions', { method: 'POST', body: { rawText, actionItems, projectId } }),
 
     // The backend binds a raw JSON string ([FromBody] string), so we send the
     // text directly — JSON.stringify wraps it in quotes exactly as required.
     analyzeDocument: (text) =>
         request('/Summarizer/analyze', { method: 'POST', body: text }),
+
+    // Analyze the same text under an explicit personalization profile (not the
+    // saved settings) — powers the "see this email for a different profile"
+    // comparison. Pass null for the "standard / no personalization" view.
+    analyzeDocumentAs: (text, profile) =>
+        request('/Summarizer/analyze-as', { method: 'POST', body: { text, profile: profile || null } }),
 
     // --- Task persistence ---
     getMyTasks: () => request('/Tasks/my-tasks'),
@@ -104,6 +117,15 @@ export const api = {
     getSettings: () => request('/UserSettings'),
     saveSettings: (settings) =>
         request('/UserSettings', { method: 'PUT', body: settings }),
+
+    // --- Projects ---
+    getProjects: () => request('/Projects'),
+    createProject: (name, colorHex = '#166534') =>
+        request('/Projects', { method: 'POST', body: { name, colorHex } }),
+    updateProject: (id, payload) =>
+        request(`/Projects/${id}`, { method: 'PUT', body: payload }),
+    deleteProject: (id) =>
+        request(`/Projects/${id}`, { method: 'DELETE' }),
 };
 
 export { API_BASE };
