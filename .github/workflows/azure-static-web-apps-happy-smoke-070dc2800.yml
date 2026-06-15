@@ -35,6 +35,16 @@ jobs:
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
+        env:
+          # Vite inlines VITE_* at BUILD time, so these must be set HERE
+          # (the SWA portal "environment variables" are runtime-only and won't work).
+          # Change VITE_API_BASE to your backend's URL + /api if it isn't neurosync.azurewebsites.net.
+          VITE_API_BASE: https://neurosync.azurewebsites.net/api
+          # Outlook / Microsoft Graph. The client ID is a public SPA identifier (safe
+          # to commit). You must ALSO add this site's URL as a SPA redirect URI in the
+          # Entra app registration, or sign-in fails with redirect_uri mismatch.
+          VITE_MS_CLIENT_ID: 21746614-2125-4d4a-b7d4-4f2b9bec241f
+          VITE_MS_TENANT: common
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_HAPPY_SMOKE_070DC2800 }}
           action: "upload"
