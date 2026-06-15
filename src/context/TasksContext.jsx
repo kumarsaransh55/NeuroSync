@@ -66,6 +66,7 @@ function mapDbTask(t) {
         name: t.title || t.originalSourceText || 'Task',
         description: '',
         aiSummary: t.summary || '',
+        originalSourceText: t.originalSourceText || '',
         completed: t.progressPercentage === 100,
         dueDate: due ? due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Today',
         dueDateISO: due ? toLocalInput(due) : '',

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Sparkles, Mail, GripVertical, CheckCircle2, Circle,
     Clock, Calendar, Bell, ShieldAlert, Play, Target, Plus,
-    MoreVertical, ChevronDown, Inbox, Star, History, Trash, Pencil, Briefcase, User
+    MoreVertical, ChevronDown, Inbox, Star, History, Trash, Pencil, Briefcase, User, FileText
 } from 'lucide-react';
 import OutlookInboxModal from './OutlookInboxModal';
 import { api } from '../../api/client';
@@ -95,6 +95,7 @@ export default function TaskBuilder() {
             relatedTo: email.sender,
             assignee: { name: 'Me', avatar: `https://ui-avatars.com/api/?name=Me&background=random` },
             tags: [{ label: 'email', type: 'category' }],
+            originalSourceText: rawText,
             steps: [],
         };
         setTasks(prev => [placeholder, ...prev]);
@@ -174,6 +175,7 @@ export default function TaskBuilder() {
             projectId: currentProjectId,
             assignee: { name: 'Me', avatar: `https://ui-avatars.com/api/?name=Me&background=random` },
             tags: [],
+            originalSourceText: rawText,
             steps: [],
         };
         setTasks(prev => [placeholder, ...prev]);
@@ -683,6 +685,17 @@ export default function TaskBuilder() {
                                         {/* Expanded Subtasks Area */}
                                         {isExpanded && (
                                             <div className="border-t border-gray-100 bg-white p-5 cursor-default">
+                                                {/* The original source, kept in-app as a reference for context. */}
+                                                {task.originalSourceText && (
+                                                    <details className="mb-4 rounded-lg border border-gray-200 bg-gray-50/60">
+                                                        <summary className="cursor-pointer select-none px-3 py-2 text-[12px] font-medium text-gray-600 hover:text-gray-800 flex items-center gap-1.5">
+                                                            <FileText size={13} /> View original
+                                                        </summary>
+                                                        <div className="px-3 pb-3 pt-2 text-[12px] text-gray-600 leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto border-t border-gray-200">
+                                                            {task.originalSourceText}
+                                                        </div>
+                                                    </details>
+                                                )}
                                                 <div className="flex justify-between items-end mb-4">
                                                     <div>
                                                         <h4 className="text-[14px] font-bold text-gray-900">Subtasks</h4>

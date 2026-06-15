@@ -64,6 +64,7 @@ export default function EmailDocumentSummarizer() {
                 projectId: currentProjectId || null,
                 assignee: { name: 'Me', avatar: 'https://ui-avatars.com/api/?name=Me&background=random' },
                 tags: [{ label: 'email', type: 'category' }],
+                originalSourceText: source,
                 steps: actionItems.map((a, i) => ({ id: `s_${Date.now()}_${i}`, text: a, description: '', completed: false, estMinutes: 10 })),
             }, ...prev]);
         } finally {

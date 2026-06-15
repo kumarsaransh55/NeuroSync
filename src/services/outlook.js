@@ -92,12 +92,38 @@ export async function disconnectOutlook() {
     try { msalInstance.setActiveAccount(null); } catch { /* ignore */ }
 }
 
+// Graph returns the full message body as HTML (or plain text); bodyPreview is
+// truncated to ~255 chars. We pull the full body and flatten any HTML to readable
+// text so the whole email is available as the task's "View original" source.
+function htmlToText(content, contentType) {
+    if (!content) return '';
+    if ((contentType || '').toLowerCase() !== 'html') return content.trim();
+    const cleaned = content
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<\s*br\s*\/?>/gi, '\n')
+        .replace(/<\/\s*(p|div|li|tr|h[1-6])\s*>/gi, '\n')
+        .replace(/<\s*li[^>]*>/gi, '• ');
+    let text;
+    try {
+        text = new DOMParser().parseFromString(cleaned, 'text/html').body?.textContent || '';
+    } catch {
+        text = cleaned.replace(/<[^>]+>/g, ' ');
+    }
+    return text
+        .replace(/ /g, ' ')
+        .replace(/[ \t]{2,}/g, ' ')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+}
+
 // Fetch recent messages mapped to the inbox shape. Returns null if a sign-in
 // redirect is in progress (the page is navigating away).
 export async function fetchOutlookMessages(top = 8) {
     const token = await getToken();
     if (!token) return null;
-    const url = `https://graph.microsoft.com/v1.0/me/messages?$top=${top}&$select=subject,bodyPreview,from,receivedDateTime`;
+    const url = `https://graph.microsoft.com/v1.0/me/messages?$top=${top}&$select=subject,body,bodyPreview,from,receivedDateTime`;
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) throw new Error(`Microsoft Graph request failed (${res.status}).`);
     const data = await res.json();
@@ -105,7 +131,7 @@ export async function fetchOutlookMessages(top = 8) {
         id: m.id,
         sender: m.from?.emailAddress?.name || m.from?.emailAddress?.address || 'Unknown sender',
         subject: m.subject || '(no subject)',
-        body: m.bodyPreview || '',
+        body: m.body?.content ? htmlToText(m.body.content, m.body.contentType) : (m.bodyPreview || ''),
         time: m.receivedDateTime ? new Date(m.receivedDateTime).toLocaleDateString() : '',
     }));
 }
