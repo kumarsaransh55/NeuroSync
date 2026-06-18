@@ -15,10 +15,10 @@ stay inside the enterprise's trust boundary.
 NeuroSync's AI sits behind an interface (`IAiAssistantService`) with **two
 implementations**, selected automatically by config:
 
-1. **Azure OpenAI — recommended / production.** (`AzureOpenAiAssistantService`.)
-   - Same GPT models, hosted **in your Azure tenant/region**; prompts are **not used to train** the models; supports private networking + enterprise compliance.
+1. **Azure OpenAI (GPT-5.5) — production.** (`AzureOpenAiAssistantService`.)
+   - The latest GPT-5.5 model, hosted **in your Azure tenant/region**; prompts are **not used to train** the models; supports private networking + enterprise compliance.
    - Enabled by setting `AzureOpenAI:Endpoint` / `ApiKey` / `Deployment`. The app switches to it automatically — no code change.
-2. **Google Gemini — fallback** for quick local demos. (`AiAssistantService`.)
+2. **A pluggable fallback implementation** for local development when Azure isn't configured. (`AiAssistantService`.)
 
 > This is no longer just a recommendation — **Azure OpenAI is implemented** and goes
 > live the moment the three config values are set.
@@ -26,7 +26,7 @@ implementations**, selected automatically by config:
 ## The spectrum (most control → most convenient)
 - **Self-hosted open models** (Llama / Phi / Mistral via Ollama / vLLM) — data never leaves your infra; needs GPU.
 - **Azure OpenAI in-tenant** — the pragmatic enterprise default (what we use).
-- **Public model APIs** (e.g. Gemini) — convenient, but data leaves the tenant → demo-only for sensitive data.
+- **Public model APIs** — convenient, but data leaves the tenant → avoid for sensitive data.
 
 ## Defence-in-depth (regardless of model)
 - **No training on your data**; short/zero retention.
@@ -41,7 +41,7 @@ implementations**, selected automatically by config:
 if (!string.IsNullOrWhiteSpace(builder.Configuration["AzureOpenAI:Endpoint"]))
     builder.Services.AddScoped<IAiAssistantService, AzureOpenAiAssistantService>();
 else
-    builder.Services.AddScoped<IAiAssistantService, AiAssistantService>(); // Gemini
+    builder.Services.AddScoped<IAiAssistantService, AiAssistantService>(); // local-dev fallback
 ```
 Frontend, controllers, prompts, and database are untouched.
 

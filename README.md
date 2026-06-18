@@ -9,7 +9,7 @@ employees with **ADHD and dyslexia**, who pay a disproportionate "cognitive tax"
 turning dense, unstructured text into *started, finished* work.
 
 > This repo is the **React frontend**. It talks to the **NeuroSync API**
-> (ASP.NET Core + Azure OpenAI/Gemini) — see that repo's README. Strategy, pitch,
+> (ASP.NET Core + Azure OpenAI, GPT-5.5) — see that repo's README. Strategy, pitch,
 > demo, Q&A, security and Outlook docs live in [`/docs`](docs).
 
 ---

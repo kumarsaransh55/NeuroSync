@@ -2,7 +2,7 @@
 
 > The jury weights **"seeing it work."** This is the exact, rehearsable path.
 > Target **~2.5 min**. Pairs with Slide 6 of `PITCH.md`. The AI is real (Azure
-> OpenAI / Gemini) — treat the network as a risk; keep the backup recording ready.
+> OpenAI, GPT-5.5) — treat the network as a risk; keep the backup recording ready.
 
 ---
 

@@ -35,7 +35,7 @@ A working MVP — not slideware:
 - **Personalization** — an opt-in profile that **adapts every AI output** to the user (see USP 1).
 - **Outlook** — real Microsoft Graph sign-in → inbox → "break into task".
 - **Human edge** — "feeling overwhelmed?" reset, gentle reminders, calm/accessible UI.
-- Runs on **Azure OpenAI in-tenant** (Gemini fallback).
+- Runs on **Azure OpenAI (GPT-5.5) in-tenant**.
 
 ---
 
